@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include <QPalette>
 #include "./ui_mainwindow.h"
+#include "gameeditorwindow.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -31,7 +32,8 @@ MainWindow::MainWindow(QWidget *parent)
 }
 
 void MainWindow::showEditQuestionPack(){
-
+    GameEditorWindow *editor = new GameEditorWindow(this);
+    editor->show();
 }
 MainWindow::~MainWindow()
 {
