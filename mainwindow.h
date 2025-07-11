@@ -4,6 +4,9 @@
 #include <QMainWindow>
 #include <QStackedWidget>
 #include "menu.h"
+#include "playerSetup.h"
+#include "gameUI.h"
+#include "GameLogic.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -21,9 +24,14 @@ private:
     Ui::MainWindow *ui;
     QStackedWidget *stackedWidget;
     MainMenuWidget *menuWidget;
+    PlayerSetupWidget *setupSinglePlayWidget;
+    GameWidget *gameWidget;
+    GameLogic *gameLogic;
 
 private slots:
+    void showPlayerSetup();
     void showEditQuestionPack();
+    void startGame(const QStringList playerNames, const QString& filePath);
 
 };
 #endif // MAINWINDOW_H

@@ -32,6 +32,16 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(SIGameMP
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
+        playerSetup.h
+        playerSetup.cpp
+        GameLogic.h
+        GameLogic.cpp
+        gameUI.h
+        gameUI.cpp
+        Player.h
+        Player.cpp
+        QuestionPackage.h
+        QuestionPackage.cpp
     )
 else()
     if(ANDROID)

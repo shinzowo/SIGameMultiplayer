@@ -139,6 +139,7 @@ MainMenuWidget::MainMenuWidget(QWidget *parent):QWidget(parent){
         isExpanded = !isExpanded;
     });
 
+    connect(hotseatBtn, &QPushButton::clicked, this, &MainMenuWidget::startSingleGameRequested);
     connect(editQuestionBtn, &QPushButton::clicked, this, &MainMenuWidget::editQuestionRequested);
     connect(exitBtn, &QPushButton::clicked, this, &MainMenuWidget::exitRequested);
 }
