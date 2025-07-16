@@ -40,75 +40,131 @@ void GameEditorWindow::on_saveButton_clicked()
 
 void GameEditorWindow::on_createButton_clicked()
 {
-    // Очистка
-    ui->gameTitleEdit->setText("Новая игра");
-
-    QLayoutItem* item;
-    while ((item = ui->roundsLayout->takeAt(0)) != nullptr) {
-        if (item->widget())
-            delete item->widget();
-        delete item;
+    // Очищаем и ставим одну «шаблонную» кнопку
+    QLayoutItem* it;
+    while ((it = ui->roundsLayout->takeAt(0)) != nullptr) {
+        delete it->widget();
+        delete it;
     }
 
-    // Добавление 3 раунда
-    for (int i = 1; i <= 3; ++i) {
-        QString roundName = QString("Раунд %1").arg(i);
-        QGroupBox* roundBox = new QGroupBox(roundName, this);
-        QVBoxLayout* roundLayout = new QVBoxLayout(roundBox);
 
-        // Добавим одну тему
-        QGroupBox* themeBox = new QGroupBox("Тема", roundBox);
-        QVBoxLayout* themeLayout = new QVBoxLayout(themeBox);
-
-        QHBoxLayout* themeTitleLayout = new QHBoxLayout;
-        QLabel* themeLabel = new QLabel("Название темы:");
-        QLineEdit* themeTitleEdit = new QLineEdit;
-        themeTitleEdit->setObjectName("themeTitleEdit");
-        themeTitleLayout->addWidget(themeLabel);
-        themeTitleLayout->addWidget(themeTitleEdit);
-
-        QTableWidget* questionsTable = new QTableWidget(5, 4);
-        questionsTable->setHorizontalHeaderLabels(QStringList() << "Стоимость" << "Вопрос" << "Ответ" << "Тип");
-        questionsTable->setObjectName("questionsTable");
-
-        themeLayout->addLayout(themeTitleLayout);
-        themeLayout->addWidget(questionsTable);
-        themeBox->setLayout(themeLayout);
-
-        roundLayout->addWidget(themeBox);
-        roundBox->setLayout(roundLayout);
-
-        ui->roundsLayout->insertWidget(ui->roundsLayout->count() - 1, roundBox);
-    }
-
-    // Финальный раунд
-    QGroupBox* finalBox = new QGroupBox("Финал", this);
-    QVBoxLayout* finalLayout = new QVBoxLayout(finalBox);
-
-    QGroupBox* finalThemeBox = new QGroupBox("Финальный вопрос", finalBox);
-    QVBoxLayout* finalThemeLayout = new QVBoxLayout(finalThemeBox);
-
-    QHBoxLayout* finalTitleLayout = new QHBoxLayout;
-    QLabel* finalLabel = new QLabel("Название темы:");
-    QLineEdit* finalTitleEdit = new QLineEdit;
-    finalTitleEdit->setObjectName("themeTitleEdit");
-    finalTitleLayout->addWidget(finalLabel);
-    finalTitleLayout->addWidget(finalTitleEdit);
-
-    QTableWidget* finalTable = new QTableWidget(1, 4);
-    finalTable->setHorizontalHeaderLabels(QStringList() << "Стоимость" << "Вопрос" << "Ответ" << "Тип");
-    finalTable->setObjectName("questionsTable");
-
-    finalThemeLayout->addLayout(finalTitleLayout);
-    finalThemeLayout->addWidget(finalTable);
-    finalThemeBox->setLayout(finalThemeLayout);
-
-    finalLayout->addWidget(finalThemeBox);
-    finalBox->setLayout(finalLayout);
-
-    ui->roundsLayout->insertWidget(ui->roundsLayout->count() - 1, finalBox);
+    // создаём 3 обычных раунда и один финальный
+    for (int i = 1; i <= 3; ++i) addRound();
+    addRound(nullptr)->setTitle("Финал");
 }
 
+void GameEditorWindow::on_addRoundButton_clicked()
+{
+    addRound();
+}
+
+QGroupBox* GameEditorWindow::addRound(QGroupBox* /*after*/)
+{
+    static int cnt = 1;
+    QGroupBox* roundBox = new QGroupBox(QString("Раунд %1").arg(cnt++), this);
+    roundBox->setObjectName("roundGroupBox");
+
+    auto* L = new QVBoxLayout(roundBox);
+    // — заголовок раунда —
+    auto* titleL = new QHBoxLayout;
+    titleL->addWidget(new QLabel("Название раунда:"));
+    QLineEdit* edt = new QLineEdit; edt->setObjectName("roundTitleEdit");
+    titleL->addWidget(edt);
+    L->addLayout(titleL);
+
+    // — контейнер тем —
+    QWidget* themesContainer = new QWidget; themesContainer->setObjectName("themesContainer");
+    themesContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    L->addWidget(themesContainer);
+
+    addTheme(roundBox);
+
+    // === Кнопки раунда ===
+    auto* btnL = new QHBoxLayout;
+    QPushButton* btnAddR = new QPushButton("+ Раунд");
+    QPushButton* btnRemR = new QPushButton("– Раунд");
+    btnL->addStretch();
+    btnL->addWidget(btnAddR);
+    btnL->addWidget(btnRemR);
+    L->addLayout(btnL);
+
+    // привязки
+    connect(btnAddR, &QPushButton::clicked, this, [=](){ addRound(roundBox); });
+    connect(btnRemR, &QPushButton::clicked, this, [=](){ roundBox->deleteLater(); });
+
+
+    // вставка в основной layout
+    int pos = ui->roundsLayout->indexOf(ui->addRoundButton);
+    ui->roundsLayout->insertWidget(pos, roundBox, /*stretch=*/1);
+
+    return roundBox;
+}
+
+void GameEditorWindow::addTheme(QGroupBox* roundBox)
+{
+    // найдём контейнер и его layout
+    auto* themesContainer = roundBox->findChild<QWidget*>("themesContainer");
+    auto* themesL = qobject_cast<QVBoxLayout*>(themesContainer->layout());
+    if (!themesL) {
+        themesL = new QVBoxLayout(themesContainer);
+        themesContainer->setLayout(themesL);
+    }
+
+    // создаём тему
+    QGroupBox* themeBox = new QGroupBox("Тема", roundBox);
+    themeBox->setObjectName("themeGroupBox");
+    themeBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    auto* thL = new QVBoxLayout(themeBox);
+
+    // — название темы —
+    auto* thTitleL = new QHBoxLayout;
+    thTitleL->addWidget(new QLabel("Название темы:"));
+    QLineEdit* thEdit = new QLineEdit; thEdit->setObjectName("themeTitleEdit");
+    thTitleL->addWidget(thEdit);
+    thL->addLayout(thTitleL);
+
+    // — таблица вопросов и кнопки —
+    QTableWidget* tbl = new QTableWidget(0,4);
+    tbl->setHorizontalHeaderLabels({"Стоимость","Вопрос","Ответ","Тип"});
+    tbl->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    tbl->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    tbl->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    thL->addWidget(tbl, /*stretch=*/1);
+
+    auto* qBtnL = new QHBoxLayout;
+    QPushButton* btnAddQ = new QPushButton("+ Вопрос");
+    QPushButton* btnRemQ = new QPushButton("– Вопрос");
+    qBtnL->addWidget(btnAddQ);
+    qBtnL->addWidget(btnRemQ);
+    thL->addLayout(qBtnL);
+
+    connect(btnAddQ, &QPushButton::clicked, this, [=](){ addQuestion(tbl); });
+    connect(btnRemQ, &QPushButton::clicked, this, [=](){
+        if (tbl->rowCount()) tbl->removeRow(tbl->rowCount()-1);
+    });
+
+    // — кнопки добавить/удалить тему —
+    auto* thBtnL = new QHBoxLayout;
+    QPushButton* btnAddTh = new QPushButton("+ Тема");
+    QPushButton* btnRemTh = new QPushButton("– Тема");
+    thBtnL->addWidget(btnAddTh);
+    thBtnL->addStretch();
+    thBtnL->addWidget(btnRemTh);
+    thL->addLayout(thBtnL);
+
+    connect(btnAddTh, &QPushButton::clicked, this, [=](){ addTheme(roundBox); });
+    connect(btnRemTh, &QPushButton::clicked, this, [=](){ themeBox->deleteLater(); });
+
+    themesL->addWidget(themeBox, /*stretch=*/1);
+}
+
+void GameEditorWindow::addQuestion(QTableWidget* table)
+{
+    table->insertRow(table->rowCount());
+}
+
+
+//                                             === Сбор данных для пака вопросов ===
 QJsonObject GameEditorWindow::collectGameData()
 {
     QJsonObject gameObject;
