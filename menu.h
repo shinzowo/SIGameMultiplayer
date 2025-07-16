@@ -11,6 +11,7 @@ public:
     explicit MainMenuWidget(QWidget *parent = nullptr);
 
 signals:
+    void startMultiplayerGameRequested();
     void startSingleGameRequested();
     void editQuestionRequested();
     void exitRequested();

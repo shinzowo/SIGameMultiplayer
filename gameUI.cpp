@@ -8,6 +8,32 @@ GameWidget::GameWidget(QWidget* parent)
     : QWidget(parent)
 {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
+    font=new QFont("Inter", 16);
+    QString style = R"(
+           QPushButton {
+               background-color: #c9d052;
+               color: black;
+               border: 1px solid #000000;
+               border-radius: 10px;
+           }
+           QPushButton:hover {
+               background-color: #A8AE43;
+           }
+           QPushButton:pressed {
+               background-color: #1f618d;
+           }
+    )";
+
+    QHBoxLayout *menuLayout = new QHBoxLayout(this);
+    mainLayout->addLayout(menuLayout);
+    backButton = new QPushButton("Назад");
+    backButton->setFixedSize(QSize(100, 35));
+    menuLayout->addWidget(backButton);
+    menuLayout->addStretch();
+    backButton->setStyleSheet(style);
+    backButton->setFont(*font);
+    connect(backButton, &QPushButton::clicked, this, &GameWidget::onBackClicked);
+
     //секция игроков
     playersLayout=new QHBoxLayout();
     mainLayout->addLayout(playersLayout);
@@ -15,6 +41,7 @@ GameWidget::GameWidget(QWidget* parent)
     //сетка вопросов
     m_gridLayout = new QGridLayout();
     mainLayout->addLayout(m_gridLayout);
+
 }
 
 void GameWidget::setLogic(GameLogic* logic) {
@@ -44,12 +71,14 @@ void GameWidget::setLogic(GameLogic* logic) {
         QLabel* nameLabel = new QLabel(p.getName());
         nameLabel->setAlignment(Qt::AlignCenter);
         nameLabel->setStyleSheet("padding: 6px; border: 1px solid gray;");
+        nameLabel->setFont(*font);
 
         // Можно сохранить указатель, чтобы позже подсвечивать активного игрока
         playerNameLabels.append(nameLabel);
 
         QLabel* scoreLabel = new QLabel(QString::number(p.getScore()));
         scoreLabel->setAlignment(Qt::AlignCenter);
+        scoreLabel->setFont(*font);
         playerScoreLabels.append(scoreLabel);
 
         pl->addWidget(nameLabel);
@@ -72,6 +101,33 @@ void GameWidget::updatePlayerScores() {
 
 
 void GameWidget::displayRound(int roundIndex) {
+    QString style = R"(
+        QPushButton {
+            background-color: #c9d052;
+            color: #000000;
+            font-weight: bold;
+            font-size: 16px;
+            padding: 10px 20px;
+            border: 2px solid #8e9b2e;
+            border-radius: 12px;
+            transition: all 0.2s ease-in-out;
+        }
+        QPushButton:hover {
+            background-color: #b0b842;
+            border-color: #727b22;
+        }
+        QPushButton:pressed {
+            background-color: #1f618d;
+            color: white;
+            border-color: #154360;
+        }
+        QPushButton:disabled {
+            background-color: #e0e0e0;
+            color: #888888;
+            border-color: #bbbbbb;
+        }
+    )";
+
     if (!m_logic) return;
 
     clearGrid();
@@ -87,6 +143,7 @@ void GameWidget::displayRound(int roundIndex) {
     for (int row = 0; row < themeCount; ++row) {
         QLabel* themeLabel = new QLabel(round.themes[row].name);
         themeLabel->setAlignment(Qt::AlignCenter);
+        themeLabel->setFont(*font);
         m_gridLayout->addWidget(themeLabel, row, 0);  // вертикально в 0-й столбец
     }
 
@@ -100,7 +157,7 @@ void GameWidget::displayRound(int roundIndex) {
             btn->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
             btn->setProperty("theme", row);
             btn->setProperty("index", col);
-
+            btn->setStyleSheet(style);
             connect(btn, &QPushButton::clicked, this, &GameWidget::handleQuestionClicked);
 
             m_gridLayout->addWidget(btn, row, col + 1);  // вправо от темы

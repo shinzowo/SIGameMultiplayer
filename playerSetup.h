@@ -16,6 +16,7 @@ public:
 signals:
     void playersReady(const QStringList &names, const QString &loadedFilePath);
     void questionsLoaded(const QString &filePath);
+    void onBackClicked();
 
 private slots:
     void onAddPlayerClicked();
@@ -28,6 +29,7 @@ private:
     QPushButton *addPlayerButton;
     QPushButton *startButton;
     QPushButton *loadButton;
+    QPushButton *backButton;
     QLabel *fileLabel;
     QString loadedFilePath;
 

@@ -42,6 +42,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         Player.cpp
         QuestionPackage.h
         QuestionPackage.cpp
+        connectionWidget.h
+        connectionWidget.cpp
     )
 else()
     if(ANDROID)

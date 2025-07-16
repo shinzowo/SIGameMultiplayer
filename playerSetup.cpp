@@ -24,6 +24,16 @@ PlayerSetupWidget::PlayerSetupWidget(QWidget *parent) : QWidget(parent) {
            }
     )";
 
+    QHBoxLayout *menuLayout = new QHBoxLayout(this);
+    mainLayout->addLayout(menuLayout);
+    backButton = new QPushButton("Назад");
+    backButton->setFixedSize(QSize(100, 35));
+    menuLayout->addWidget(backButton);
+    menuLayout->addStretch();
+    mainLayout->addStretch();
+    backButton->setStyleSheet(style);
+    backButton->setFont(font);
+
     QLabel *label = new QLabel("Введите имена игроков:");
     label->setFont(font);
     mainLayout->addWidget(label);
@@ -42,6 +52,7 @@ PlayerSetupWidget::PlayerSetupWidget(QWidget *parent) : QWidget(parent) {
     // Кнопка выбора файла вопросов
     loadButton = new QPushButton("Загрузить пакет вопросов");
     startButton = new QPushButton("Начать игру");
+    mainLayout->addStretch();
 
 
     QList<QPushButton*> buttons={addPlayerButton, loadButton, startButton};
@@ -60,8 +71,10 @@ PlayerSetupWidget::PlayerSetupWidget(QWidget *parent) : QWidget(parent) {
             mainLayout->addSpacing(20);
         }
     }
+    connect(backButton, &QPushButton::clicked, this, &PlayerSetupWidget::onBackClicked);
     connect(loadButton, &QPushButton::clicked, this, &PlayerSetupWidget::onLoadQuestionsClicked);
     connect(startButton, &QPushButton::clicked, this, &PlayerSetupWidget::onStartClicked);
+
 }
 
 void PlayerSetupWidget::onAddPlayerClicked() {

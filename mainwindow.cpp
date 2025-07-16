@@ -3,6 +3,7 @@
 #include "./ui_mainwindow.h"
 #include "gameeditorwindow.h"
 
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -25,19 +26,28 @@ MainWindow::MainWindow(QWidget *parent)
     menuWidget = new MainMenuWidget(this);
     setupSinglePlayWidget = new PlayerSetupWidget(this);
     gameWidget = new GameWidget(this);
+    connectionSetup = new ConnectionWidget(this);
 
     //add pages in widgets
     stackedWidget->addWidget(menuWidget);
     stackedWidget->addWidget(setupSinglePlayWidget);
     stackedWidget->addWidget(gameWidget);
+    stackedWidget->addWidget(connectionSetup);
 
+    connect(menuWidget, &MainMenuWidget::startMultiplayerGameRequested, this, &MainWindow::showConnectionSetup);
     connect(menuWidget, &MainMenuWidget::startSingleGameRequested, this, &MainWindow::showPlayerSetup);
     connect(menuWidget, &MainMenuWidget::editQuestionRequested, this, &MainWindow::showEditQuestionPack);
     connect(menuWidget, &MainMenuWidget::exitRequested, this, &MainWindow::close);
 
     connect(setupSinglePlayWidget, &PlayerSetupWidget::playersReady, this, &MainWindow::startGame);
-}
+    connect(setupSinglePlayWidget, &PlayerSetupWidget::onBackClicked, this, &MainWindow::toMenu);
+    connect(connectionSetup, &ConnectionWidget::backToMenu, this, &MainWindow::toMenu);
 
+    connect(gameWidget, &GameWidget::onBackClicked, this, &MainWindow::toPlayerSetup);
+}
+void MainWindow::showConnectionSetup(){
+    stackedWidget->setCurrentWidget(connectionSetup);
+}
 void MainWindow::showEditQuestionPack(){
     GameEditorWindow *editor = new GameEditorWindow(this);
     editor->show();
@@ -60,6 +70,12 @@ void MainWindow::startGame(const QStringList playerNames, const QString& filePat
     stackedWidget->setCurrentWidget(gameWidget);
 }
 
+void MainWindow::toMenu(){
+    stackedWidget->setCurrentWidget(menuWidget);
+}
+void MainWindow::toPlayerSetup(){
+    stackedWidget->setCurrentWidget(setupSinglePlayWidget);
+}
 MainWindow::~MainWindow()
 {
     delete ui;

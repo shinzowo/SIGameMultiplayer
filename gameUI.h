@@ -15,6 +15,8 @@ public:
 
     void setLogic(GameLogic* logic);
     void displayRound(int roundIndex);
+signals:
+    void onBackClicked();
 
 private slots:
     void handleQuestionClicked();
@@ -30,6 +32,7 @@ private:
     QList<Player> players;
     QVector<bool> hasAttempted;
     QPushButton* currentQuestionButton = nullptr;
+    QPushButton* backButton=nullptr;
 
     QHBoxLayout* playersLayout = nullptr;  // новый лэйаут для игроков
     int currentPlayerIndex = -1;
@@ -39,6 +42,8 @@ private:
     void updatePlayerScores();
     void askWhoWillAnswer();
     void askPlayerToAnswer();
+
+    QFont* font;
 
 
 };

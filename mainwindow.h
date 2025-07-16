@@ -7,6 +7,7 @@
 #include "playerSetup.h"
 #include "gameUI.h"
 #include "GameLogic.h"
+#include "ConnectionWidget.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -27,11 +28,15 @@ private:
     PlayerSetupWidget *setupSinglePlayWidget;
     GameWidget *gameWidget;
     GameLogic *gameLogic;
+    ConnectionWidget *connectionSetup;
 
 private slots:
+    void showConnectionSetup();
     void showPlayerSetup();
     void showEditQuestionPack();
     void startGame(const QStringList playerNames, const QString& filePath);
+    void toMenu();
+    void toPlayerSetup();
 
 };
 #endif // MAINWINDOW_H
