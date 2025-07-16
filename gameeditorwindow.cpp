@@ -109,13 +109,11 @@ void GameEditorWindow::addTheme(QGroupBox* roundBox)
         themesL = new QVBoxLayout(themesContainer);
         themesContainer->setLayout(themesL);
     }
-
     // создаём тему
     QGroupBox* themeBox = new QGroupBox("Тема", roundBox);
     themeBox->setObjectName("themeGroupBox");
     themeBox->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     auto* thL = new QVBoxLayout(themeBox);
-
     // — название темы —
     auto* thTitleL = new QHBoxLayout;
     thTitleL->addWidget(new QLabel("Название темы:"));
