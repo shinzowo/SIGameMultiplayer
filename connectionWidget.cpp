@@ -1,12 +1,11 @@
 #include "ConnectionWidget.h"
-#include <QHBoxLayout>
+#include <QVBoxLayout>
+#include <QLabel>
 #include <QFont>
+#include <QHBoxLayout>
 
-ConnectionWidget::ConnectionWidget(QWidget *parent)
-    : QWidget(parent)
-{
+ConnectionWidget::ConnectionWidget(QWidget *parent) : QWidget(parent) {
     QFont font("Inter", 16);
-
     QString buttonStyle = R"(
         QPushButton {
             background-color: #c9d052;
@@ -22,47 +21,106 @@ ConnectionWidget::ConnectionWidget(QWidget *parent)
         }
     )";
 
-    auto* layout = new QVBoxLayout(this);
+    auto* mainLayout = new QVBoxLayout(this);
 
-    QLabel* titleLabel = new QLabel("Подключение к игре");
-    titleLabel->setFont(font);
-    titleLabel->setAlignment(Qt::AlignCenter);
-    layout->addWidget(titleLabel);
+    modeSelector = new QComboBox();
+    modeSelector->addItem("Создать сервер");
+    modeSelector->addItem("Подключиться");
+    modeSelector->setFont(font);
+    mainLayout->addWidget(modeSelector);
 
-    QLabel* ipLabel = new QLabel("IP адрес:");
-    ipLabel->setFont(font);
-    ipEdit = new QLineEdit();
-    ipEdit->setFont(font);
-    ipEdit->setPlaceholderText("Например: 127.0.0.1");
+    stackedWidget = new QStackedWidget();
+    mainLayout->addWidget(stackedWidget);
 
-    QLabel* portLabel = new QLabel("Порт:");
-    portLabel->setFont(font);
-    portEdit = new QLineEdit();
-    portEdit->setFont(font);
-    portEdit->setPlaceholderText("Например: 4242");
+    // --- Серверная страница ---
+    serverPage = new QWidget();
+    auto* serverLayout = new QVBoxLayout(serverPage);
 
-    layout->addWidget(ipLabel);
-    layout->addWidget(ipEdit);
-    layout->addWidget(portLabel);
-    layout->addWidget(portEdit);
+    QLabel* serverTitle = new QLabel("Создание сервера");
+    serverTitle->setFont(font);
+    serverTitle->setAlignment(Qt::AlignCenter);
+    serverLayout->addWidget(serverTitle);
 
-    connectButton = new QPushButton("Подключиться");
-    connectButton->setFont(font);
-    connectButton->setStyleSheet(buttonStyle);
+    QLabel* serverPortLabel = new QLabel("Порт для подключения:");
+    serverPortLabel->setFont(font);
+    serverLayout->addWidget(serverPortLabel);
+
+    serverPortEdit = new QLineEdit();
+    serverPortEdit->setFont(font);
+    serverPortEdit->setPlaceholderText("Например: 4242");
+    serverLayout->addWidget(serverPortEdit);
+
+    serverActionButton = new QPushButton("Создать сервер");
+    serverActionButton->setFont(font);
+    serverActionButton->setStyleSheet(buttonStyle);
+    serverLayout->addWidget(serverActionButton);
+
+    stackedWidget->addWidget(serverPage);
+
+    // --- Клиентская страница ---
+    clientPage = new QWidget();
+    auto* clientLayout = new QVBoxLayout(clientPage);
+
+    QLabel* clientTitle = new QLabel("Подключение к серверу");
+    clientTitle->setFont(font);
+    clientTitle->setAlignment(Qt::AlignCenter);
+    clientLayout->addWidget(clientTitle);
+
+    QLabel* clientIpLabel = new QLabel("IP адрес сервера:");
+    clientIpLabel->setFont(font);
+    clientLayout->addWidget(clientIpLabel);
+
+    clientIpEdit = new QLineEdit();
+    clientIpEdit->setFont(font);
+    clientIpEdit->setPlaceholderText("Например: 192.168.1.100");
+    clientLayout->addWidget(clientIpEdit);
+
+    QLabel* clientPortLabel = new QLabel("Порт для подключения:");
+    clientPortLabel->setFont(font);
+    clientLayout->addWidget(clientPortLabel);
+
+    clientPortEdit = new QLineEdit();
+    clientPortEdit->setFont(font);
+    clientPortEdit->setPlaceholderText("Например: 4242");
+    clientLayout->addWidget(clientPortEdit);
+
+    clientActionButton = new QPushButton("Подключиться");
+    clientActionButton->setFont(font);
+    clientActionButton->setStyleSheet(buttonStyle);
+    clientLayout->addWidget(clientActionButton);
+
+    stackedWidget->addWidget(clientPage);
 
     backButton = new QPushButton("Назад");
     backButton->setFont(font);
     backButton->setStyleSheet(buttonStyle);
+    mainLayout->addWidget(backButton);
 
-    layout->addWidget(connectButton);
-    layout->addWidget(backButton);
-
-    connect(connectButton, &QPushButton::clicked, this, &ConnectionWidget::handleConnectClicked);
+    // Сигналы
+    connect(modeSelector, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &ConnectionWidget::modeChanged);
+    connect(serverActionButton, &QPushButton::clicked, this, &ConnectionWidget::handleActionClicked);
+    connect(clientActionButton, &QPushButton::clicked, this, &ConnectionWidget::handleActionClicked);
     connect(backButton, &QPushButton::clicked, this, &ConnectionWidget::backToMenu);
+
+    modeChanged(0);
 }
 
-void ConnectionWidget::handleConnectClicked() {
-    QString ip = ipEdit->text();
-    quint16 port = portEdit->text().toUShort();
-    emit connectToServer(ip, port);
+void ConnectionWidget::modeChanged(int index) {
+    stackedWidget->setCurrentIndex(index);
 }
+
+void ConnectionWidget::handleActionClicked() {
+    if (stackedWidget->currentWidget() == serverPage) {
+        quint16 port = serverPortEdit->text().toUShort();
+        emit startServer(port);
+    } else if (stackedWidget->currentWidget() == clientPage) {
+        QString ip = clientIpEdit->text();
+        quint16 port = clientPortEdit->text().toUShort();
+        emit connectToServer(ip, port);
+    }
+}
+
+
+
+
+
