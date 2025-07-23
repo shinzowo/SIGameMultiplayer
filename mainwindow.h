@@ -8,6 +8,7 @@
 #include "gameUI.h"
 #include "GameLogic.h"
 #include "ConnectionWidget.h"
+#include "LobbyWindow.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -29,6 +30,8 @@ private:
     GameWidget *gameWidget;
     GameLogic *gameLogic;
     ConnectionWidget *connectionSetup;
+    LobbyWindow *lobbyWindow;
+
 
 private slots:
     void showConnectionSetup();
@@ -37,6 +40,7 @@ private slots:
     void startGame(const QStringList playerNames, const QString& filePath);
     void toMenu();
     void toPlayerSetup();
+    void showLobby();
 
 };
 #endif // MAINWINDOW_H

@@ -27,12 +27,14 @@ MainWindow::MainWindow(QWidget *parent)
     setupSinglePlayWidget = new PlayerSetupWidget(this);
     gameWidget = new GameWidget(this);
     connectionSetup = new ConnectionWidget(this);
+    lobbyWindow = new LobbyWindow(this);
 
     //add pages in widgets
     stackedWidget->addWidget(menuWidget);
     stackedWidget->addWidget(setupSinglePlayWidget);
     stackedWidget->addWidget(gameWidget);
     stackedWidget->addWidget(connectionSetup);
+    stackedWidget->addWidget(lobbyWindow);
 
     connect(menuWidget, &MainMenuWidget::startMultiplayerGameRequested, this, &MainWindow::showConnectionSetup);
     connect(menuWidget, &MainMenuWidget::startSingleGameRequested, this, &MainWindow::showPlayerSetup);
@@ -75,6 +77,10 @@ void MainWindow::toMenu(){
 }
 void MainWindow::toPlayerSetup(){
     stackedWidget->setCurrentWidget(setupSinglePlayWidget);
+}
+
+void MainWindow::showLobby() {
+    stackedWidget->setCurrentWidget(lobbyWindow);
 }
 MainWindow::~MainWindow()
 {

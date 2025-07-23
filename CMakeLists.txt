@@ -25,6 +25,8 @@ set(PROJECT_SOURCES
     menu.cpp
     menu.h
 
+    LobbyWindow.ui
+
     res.qrc
 )
 
@@ -48,6 +50,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         gameServer.cpp
         gameClient.h
         gameClient.cpp
+        LobbyWindow.h LobbyWindow.cpp
     )
 else()
     if(ANDROID)
