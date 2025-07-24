@@ -11,6 +11,7 @@
 #include "LobbyWindow.h"
 #include "GameServer.h"
 #include "GameClient.h"
+#include "multiplayerwindow.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -33,6 +34,7 @@ private:
     GameLogic *gameLogic;
     ConnectionWidget *connectionSetup;
     LobbyWindow *lobbyWindow;
+    MultiplayerWindow *gameMPWindow;
 
     GameServer *server=nullptr;
     GameClient *client=nullptr;
@@ -50,6 +52,7 @@ private slots:
     void onCreateServerClicked();
     void onConnectClicked();
     void onLobbyUpdated(const QStringList &players);
+    void onGameStart();
 
 };
 #endif // MAINWINDOW_H

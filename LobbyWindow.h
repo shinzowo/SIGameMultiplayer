@@ -11,13 +11,16 @@ public:
     ~LobbyWindow();
 
 signals:
+    void readyStatusChanged(bool isReady);
     void exitRequested();
+    void startGameRequested();
 private slots:
     void handleExitButton();
+    void handleReadyButton();
 public:
     Ui::LobbyWindow *ui;
 private:
-
+    bool isReady = false;
 };
 
 #endif // LOBBYWINDOW_H

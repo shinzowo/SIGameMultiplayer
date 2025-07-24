@@ -33,7 +33,7 @@ void GameClient::onConnected()
     obj["nickname"] = nickname;
 
     QJsonDocument doc(obj);
-    socket->write(doc.toJson(QJsonDocument::Compact) + "\n");
+    socket->write(doc.toJson(QJsonDocument::Compact)         + "\n");
 
     qDebug() << "Connected and sent nickname:" << nickname;
 }
@@ -64,6 +64,11 @@ void GameClient::onReadyRead()
             emit lobbyUpdated(players);
             qDebug() << "Lobby updated:" << players;
         }
+        else if (obj["type"].toString() == "game_start") {
+            emit gameStarted();
+            qDebug() << "Received game_start, emitting signal";
+            continue;
+        }
     }
 }
 
@@ -72,6 +77,27 @@ void GameClient::onError(QAbstractSocket::SocketError socketError)
     qWarning() << "Socket error:" << socketError << socket->errorString();
 }
 
+void GameClient::sendReadyStatus(bool isReady)
+{
+    if (!socket || !socket->isOpen()) {
+        qDebug() << "Socket not connected!";
+        return;
+    }
+
+    QJsonObject msg {
+        {"type", "ready_status"},  // Совпадает с проверкой на сервере
+        {"nickname", nickname},
+        {"is_ready", isReady}
+    };
+
+    QByteArray data = QJsonDocument(msg).toJson(QJsonDocument::Compact) + "\n";
+    qDebug() << "Sending ready status:" << data;
+
+    socket->write(data);
+    if (!socket->waitForBytesWritten(1000)) {
+        qDebug() << "Failed to send ready status!";
+    }
+}
 
 
 
