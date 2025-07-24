@@ -2,5 +2,7 @@
     <qresource prefix="/">
         <file>res/Logo.png</file>
         <file>res/ProfileIcon.png</file>
+        <file>res/Lectern.png</file>
+        <file>res/Speech.png</file>
     </qresource>
 </RCC>

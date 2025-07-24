@@ -31,6 +31,7 @@ MainWindow::MainWindow(QWidget *parent)
     gameWidget = new GameWidget(this);
     connectionSetup = new ConnectionWidget(this);
     lobbyWindow = new LobbyWindow(this);
+    gameMPWindow = new MultiplayerWindow(this);
 
     //add pages in widgets
     stackedWidget->addWidget(menuWidget);
@@ -38,6 +39,7 @@ MainWindow::MainWindow(QWidget *parent)
     stackedWidget->addWidget(gameWidget);
     stackedWidget->addWidget(connectionSetup);
     stackedWidget->addWidget(lobbyWindow);
+    stackedWidget->addWidget(gameMPWindow);
 
     connect(menuWidget, &MainMenuWidget::startMultiplayerGameRequested, this, &MainWindow::showConnectionSetup);
     connect(menuWidget, &MainMenuWidget::startSingleGameRequested, this, &MainWindow::showPlayerSetup);
@@ -130,10 +132,14 @@ void MainWindow::onCreateServerClicked()
     server->startServer(port);
 
 
-    // создаём клиент даже для хоста (чтобы обновлять лобби так же)
+    // создаём клиент для хоста (чтобы обновлять лобби так же)
     QTimer::singleShot(100, this, [=]() {
         client = new GameClient(this);
+
+        connect(lobbyWindow, &LobbyWindow::readyStatusChanged, client, &GameClient::sendReadyStatus);
+        connect(client, &GameClient::gameStarted, this, &MainWindow::onGameStart);
         connect(client, &GameClient::lobbyUpdated, this, &MainWindow::onLobbyUpdated);
+
         client->connectToServer("127.0.0.1", port, nickname);
     });
 
@@ -148,32 +154,59 @@ void MainWindow::onConnectClicked()
     QString nickname = menuWidget->getNickname();
     qDebug()<<"onConnectClicked"<<ip<<" "<<port<<" "<<nickname;
     client = new GameClient(this);
+
+    connect(lobbyWindow, &LobbyWindow::readyStatusChanged, client, &GameClient::sendReadyStatus);
+    connect(client, &GameClient::gameStarted, this, &MainWindow::onGameStart);
     connect(client, &GameClient::lobbyUpdated, this, &MainWindow::onLobbyUpdated);
+
     client->connectToServer(ip, port, nickname);
 
     showLobby();
 }
 
+// В onLobbyUpdated:
 void MainWindow::onLobbyUpdated(const QStringList &players)
 {
-    lobbyWindow->ui->HostNickname->clear();
-    lobbyWindow->ui->Player1->clear();
-    lobbyWindow->ui->Player2->clear();
-    lobbyWindow->ui->Player3->clear();
-    lobbyWindow->ui->Player4->clear();
+    qDebug()<<"onLobbyUpdated is activated";
+    QList<QLabel*> playerLabels = {
+        lobbyWindow->ui->HostNickname,
+        lobbyWindow->ui->Player1,
+        lobbyWindow->ui->Player2,
+        lobbyWindow->ui->Player3,
+        lobbyWindow->ui->Player4
+    };
+
 
     for (const QString &entry : players) {
-        if (entry.startsWith("Host:"))
-            lobbyWindow->ui->HostNickname->setText(entry.section(':', 1).trimmed());
-        else if (entry.startsWith("Player1:"))
-            lobbyWindow->ui->Player1->setText(entry.section(':', 1).trimmed());
-        else if (entry.startsWith("Player2:"))
-            lobbyWindow->ui->Player2->setText(entry.section(':', 1).trimmed());
-        else if (entry.startsWith("Player3:"))
-            lobbyWindow->ui->Player3->setText(entry.section(':', 1).trimmed());
-        else if (entry.startsWith("Player4:"))
-            lobbyWindow->ui->Player4->setText(entry.section(':', 1).trimmed());
+        QString playerName = entry.section(':', 0, 0);
+        QString nickname = entry.section(':', 1).trimmed();
+        bool isReady = nickname.contains("(Ready)");
+
+        if (isReady) {
+            nickname = nickname.replace(" (Ready)", "").trimmed();
+        }
+
+        QLabel* targetLabel = nullptr;
+        if (playerName == "Host") targetLabel = lobbyWindow->ui->HostNickname;
+        else if (playerName == "Player1") targetLabel = lobbyWindow->ui->Player1;
+        else if (playerName == "Player2") targetLabel = lobbyWindow->ui->Player2;
+        else if (playerName == "Player3") targetLabel = lobbyWindow->ui->Player3;
+        else if (playerName == "Player4") targetLabel = lobbyWindow->ui->Player4;
+
+        if (targetLabel) {
+            targetLabel->setText(nickname);
+            if (isReady) {
+                targetLabel->setStyleSheet("background-color: lightgreen;");
+            }
+        }
     }
+}
+
+// Добавьте обработчик начала игры:
+void MainWindow::onGameStart()
+{
+    qDebug() << "Game starting!";
+    stackedWidget->setCurrentWidget(gameMPWindow);
 }
 
 

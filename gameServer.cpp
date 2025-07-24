@@ -63,7 +63,6 @@ void GameServer::onClientReadyRead()
 
         QJsonObject obj = doc.object();
         QString type = obj["type"].toString();
-
         if (type == "join") {
             QString nickname = obj["nickname"].toString();
             clients[client] = nickname;
@@ -73,6 +72,16 @@ void GameServer::onClientReadyRead()
             }
 
             qDebug() << "Client joined with nickname:" << nickname;
+            broadcastLobby();
+        }
+        else if (type == "ready_status") {
+            qDebug()<<"onClientReadyRead ready status";
+            QString nickname = obj["nickname"].toString();
+            bool isReady = obj["is_ready"].toBool();
+            readyPlayers[nickname] = isReady;
+
+            // Проверяем, все ли готовы
+            checkAllReady();
             broadcastLobby();
         }
     }
@@ -86,13 +95,17 @@ void GameServer::broadcastLobby()
     QJsonObject players;
     int idx = 1;
     for (auto it = clients.begin(); it != clients.end(); ++it) {
+        QString status = it.value();
+        if (readyPlayers.contains(status) && readyPlayers[status]) {
+            status += " (Ready)";
+        }
+
         if (it.value() == hostNickname)
-            players["Host"] = it.value();
+            players["Host"] = status;
         else
-            players[QString("Player%1").arg(idx++)] = it.value();
+            players[QString("Player%1").arg(idx++)] = status;
     }
 
-    QJsonDocument doc(message);
     message["players"] = players;
     QByteArray data = QJsonDocument(message).toJson(QJsonDocument::Compact) + "\n";
 
@@ -100,9 +113,32 @@ void GameServer::broadcastLobby()
         if (socket->state() == QAbstractSocket::ConnectedState)
             socket->write(data);
     }
-
-    qDebug() << "Lobby updated and sent to all clients.";
 }
+
+void GameServer::checkAllReady()
+{
+    if (readyPlayers.size() < clients.size()) return;
+
+    bool allReady = true;
+    for (bool ready : readyPlayers.values()) {
+        if (!ready) {
+            allReady = false;
+            break;
+        }
+    }
+
+    if (allReady) {
+        QJsonObject message;
+        message["type"] = "game_start";
+        QByteArray data = QJsonDocument(message).toJson(QJsonDocument::Compact) + "\n";
+
+        for (QTcpSocket *socket : clients.keys()) {
+            if (socket->state() == QAbstractSocket::ConnectedState)
+                socket->write(data);
+        }
+    }
+}
+
 
 
 

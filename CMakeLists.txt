@@ -50,7 +50,11 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         gameServer.cpp
         gameClient.h
         gameClient.cpp
-        LobbyWindow.h LobbyWindow.cpp
+        LobbyWindow.h
+        LobbyWindow.cpp
+        multiplayerwindow.h
+        multiplayerwindow.cpp
+        multiplayerwindow.ui
     )
 else()
     if(ANDROID)

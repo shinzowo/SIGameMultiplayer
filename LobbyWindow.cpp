@@ -8,6 +8,7 @@ LobbyWindow::LobbyWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    connect(ui->readyButton, &QPushButton::clicked, this, &LobbyWindow::handleReadyButton);
     connect(ui->exitButton, &QPushButton::clicked, this, &LobbyWindow::handleExitButton);
 }
 
@@ -18,6 +19,12 @@ LobbyWindow::~LobbyWindow() {
 void LobbyWindow::handleExitButton()
 {
     emit exitRequested();
+}
+void LobbyWindow::handleReadyButton()
+{
+    qDebug()<<"handleReadyButton is activated";
+    isReady = !isReady;
+    emit readyStatusChanged(isReady);
 }
 
 

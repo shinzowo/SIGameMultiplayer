@@ -4,6 +4,8 @@
 #include <QTcpSocket>
 #include <QMap>
 
+
+
 class GameServer : public QTcpServer
 {
     Q_OBJECT
@@ -21,7 +23,11 @@ private slots:
 
 private:
     QMap<QTcpSocket*, QString> clients;
+    QMap<QString, bool> readyPlayers;
     void broadcastLobby();
+    void checkAllReady();
+    const QString READY_STATUS = "ready_status";
+    const QString GAME_START = "game_start";
 };
 
 
