@@ -13,8 +13,14 @@ public:
     void setAsHost();
     void setAsClient();
 
+    void showQuestionDialog(const QString &question, int time);
+public slots:
+    void showAnswerValidationDialog(const QString& question, const QString& answer);
+
 private:
     Ui::MultiplayerWindow *ui;
+
+
 };
 
 #endif // MULTIPLAYERWINDOW_H

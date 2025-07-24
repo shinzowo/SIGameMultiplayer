@@ -1,6 +1,8 @@
 #include "MultiplayerWindow.h"
 #include "ui_MultiplayerWindow.h"
 
+#include "AnswerValidationDialog.h"
+
 MultiplayerWindow::MultiplayerWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MultiplayerWindow)
@@ -37,4 +39,17 @@ void MultiplayerWindow::setAsClient() {
     ui->deductScore2->setVisible(false);
     ui->deductScore3->setVisible(false);
     ui->deductScore4->setVisible(false);
+}
+
+void MultiplayerWindow::showAnswerValidationDialog(const QString& question, const QString& answer) {
+    auto dialog = new AnswerValidationDialog(this);
+    dialog->setQuestionAndAnswer(question, answer);
+
+    connect(dialog, &AnswerValidationDialog::answerEvaluated, this, [=](bool correct) {
+        // Обработка ответа ведущим (true/false)
+        qDebug() << "Ведущий оценил ответ как:" << (correct ? "Правильный" : "Неправильный");
+        // Здесь можешь отправить результат на сервер
+    });
+
+    dialog->exec(); // показать модально
 }

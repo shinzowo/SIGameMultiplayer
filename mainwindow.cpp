@@ -6,6 +6,8 @@
 #include <QDebug>
 #include <QMessageBox>
 
+#include "QuestionDialog.h"
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -78,10 +80,27 @@ void MainWindow::showConnectionSetup()
     // 3. Показываем экран подключения
     stackedWidget->setCurrentWidget(connectionSetup);
 }
+//Диалоговые окна
+//Вызов диалогового окна ответа
+void MultiplayerWindow::showQuestionDialog(const QString &question, int time) {
+    auto dialog = new QuestionDialog(this);
+    dialog->setWindowFlags(dialog->windowFlags() | Qt::WindowStaysOnTopHint);
+    dialog->show();
+    dialog->setQuestionText(question);
+    dialog->startCountdown(time);
+
+    connect(dialog, &QuestionDialog::timeout, this, [=]() {
+        // Например, отправка серверу, что время вышло
+        // sendAnswerTimeoutToServer();
+    });
+
+    dialog->exec();
+}
 
 void MainWindow::showEditQuestionPack(){
-    GameEditorWindow *editor = new GameEditorWindow(this);
-    editor->show();
+    //===ТЕСТОВАЯ ЧАСТЬ КОДА===
+    gameMPWindow->showAnswerValidationDialog("Столица Франции?", "Париж");
+
 }
 void MainWindow::showPlayerSetup() {
     stackedWidget->setCurrentWidget(setupSinglePlayWidget);
@@ -208,7 +227,6 @@ void MainWindow::onGameStart()
     qDebug() << "Game starting!";
     stackedWidget->setCurrentWidget(gameMPWindow);
 }
-
 
 
 

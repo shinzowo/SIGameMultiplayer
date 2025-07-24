@@ -27,6 +27,11 @@ set(PROJECT_SOURCES
 
     LobbyWindow.ui
 
+
+    QuestionDialog.ui
+
+    AnswerValidationDialog.ui
+
     res.qrc
 )
 
@@ -55,6 +60,11 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         multiplayerwindow.h
         multiplayerwindow.cpp
         multiplayerwindow.ui
+        QuestionDialog.ui
+        AnswerValidationDialog.ui
+        questiondialog.h
+        questiondialog.cpp
+        answervalidationdialog.h answervalidationdialog.cpp
     )
 else()
     if(ANDROID)
