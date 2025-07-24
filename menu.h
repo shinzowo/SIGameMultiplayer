@@ -3,7 +3,7 @@
 #include <QWidget>
 #include <QPushButton>
 #include <QVBoxLayout>
-
+#include <QLineEdit>
 class MainMenuWidget : public QWidget {
     Q_OBJECT
 
@@ -15,6 +15,12 @@ signals:
     void startSingleGameRequested();
     void editQuestionRequested();
     void exitRequested();
+public:
+    QString getNickname();
+    void saveNickname();
+private:
+    QString nickname;
+    QLineEdit* nameEdit;
 };
 #endif // MENU_H
 

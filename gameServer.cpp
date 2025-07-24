@@ -1,58 +1,109 @@
 #include "GameServer.h"
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QDebug>
 
-GameServer::GameServer(QObject* parent) : QTcpServer(parent) {}
+GameServer::GameServer(QObject *parent)
+    : QTcpServer(parent)
+{}
 
-void GameServer::start(quint16 port) {
+bool GameServer::startServer(quint16 port)
+{
     if (!listen(QHostAddress::Any, port)) {
-        qWarning() << "Server could not start!";
-    } else {
-        qDebug() << "Server started on port" << port;
+        qWarning() << "Server failed to start:" << errorString();
+        return false;
     }
+    qDebug() << "Server started on port" << port;
+    return true;
 }
 
-void GameServer::incomingConnection(qintptr socketDescriptor) {
-    auto* socket = new QTcpSocket(this);
-    socket->setSocketDescriptor(socketDescriptor);
+void GameServer::incomingConnection(qintptr socketDescriptor)
+{
+    auto *clientSocket = new QTcpSocket(this);
+    clientSocket->setSocketDescriptor(socketDescriptor);
 
-    connect(socket, &QTcpSocket::readyRead, this, &GameServer::onClientReadyRead);
-    connect(socket, &QTcpSocket::disconnected, this, &GameServer::onClientDisconnected);
+    connect(clientSocket, &QTcpSocket::readyRead, this, &GameServer::onClientReadyRead);
+    connect(clientSocket, &QTcpSocket::disconnected, this, &GameServer::onClientDisconnected);
 
-    m_clients[socket] = "Unknown";
-    qDebug() << "New client connected:" << socketDescriptor;
+    clients[clientSocket] = "Unknown";
+    qDebug() << "Client connected from" << clientSocket->peerAddress().toString();
 }
 
-void GameServer::onClientReadyRead() {
-    QTcpSocket* client = qobject_cast<QTcpSocket*>(sender());
-    QByteArray data = client->readAll();
-    handleMessage(client, QString::fromUtf8(data));
-}
+void GameServer::onClientDisconnected()
+{
+    auto *client = qobject_cast<QTcpSocket*>(sender());
+    if (!client) return;
 
-void GameServer::onClientDisconnected() {
-    QTcpSocket* client = qobject_cast<QTcpSocket*>(sender());
-    m_clients.remove(client);
+    qDebug() << "Client disconnected:" << clients[client];
+    clients.remove(client);
     client->deleteLater();
+    broadcastLobby();
 }
 
-void GameServer::handleMessage(QTcpSocket* client, const QString& message) {
-    QJsonDocument doc = QJsonDocument::fromJson(message.toUtf8());
-    if (!doc.isObject()) return;
+void GameServer::onClientReadyRead()
+{
+    auto *client = qobject_cast<QTcpSocket*>(sender());
+    if (!client) return;
 
-    QJsonObject obj = doc.object();
-    QString type = obj["type"].toString();
+    static QMap<QTcpSocket*, QByteArray> buffers;
+    buffers[client] += client->readAll();
 
-    if (type == "join") {
-        QString name = obj["name"].toString();
-        m_clients[client] = name;
-        broadcastMessage(QString("Игрок %1 присоединился").arg(name));
+    while (true) {
+        int index = buffers[client].indexOf('\n');
+        if (index == -1) break;
+
+        QByteArray line = buffers[client].left(index);
+        buffers[client].remove(0, index + 1);
+
+        QJsonDocument doc = QJsonDocument::fromJson(line);
+        if (!doc.isObject()) {
+            qWarning() << "Invalid JSON received:" << line;
+            continue;
+        }
+
+        QJsonObject obj = doc.object();
+        QString type = obj["type"].toString();
+
+        if (type == "join") {
+            QString nickname = obj["nickname"].toString();
+            clients[client] = nickname;
+
+            if (clients.size() == 1) {
+                hostNickname = nickname;
+            }
+
+            qDebug() << "Client joined with nickname:" << nickname;
+            broadcastLobby();
+        }
+    }
+}
+
+void GameServer::broadcastLobby()
+{
+    QJsonObject message;
+    message["type"] = "lobby_update";
+
+    QJsonObject players;
+    int idx = 1;
+    for (auto it = clients.begin(); it != clients.end(); ++it) {
+        if (it.value() == hostNickname)
+            players["Host"] = it.value();
+        else
+            players[QString("Player%1").arg(idx++)] = it.value();
     }
 
-    // Можно обрабатывать другие типы: "answer", "selectQuestion", и т.д.
+    QJsonDocument doc(message);
+    message["players"] = players;
+    QByteArray data = QJsonDocument(message).toJson(QJsonDocument::Compact) + "\n";
+
+    for (QTcpSocket *socket : clients.keys()) {
+        if (socket->state() == QAbstractSocket::ConnectedState)
+            socket->write(data);
+    }
+
+    qDebug() << "Lobby updated and sent to all clients.";
 }
 
-void GameServer::broadcastMessage(const QString& message) {
-    for (QTcpSocket* client : m_clients.keys()) {
-        client->write(message.toUtf8());
-    }
-}
+
+
+

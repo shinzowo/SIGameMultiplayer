@@ -10,8 +10,14 @@ public:
     explicit LobbyWindow(QWidget *parent = nullptr);
     ~LobbyWindow();
 
-private:
+signals:
+    void exitRequested();
+private slots:
+    void handleExitButton();
+public:
     Ui::LobbyWindow *ui;
+private:
+
 };
 
 #endif // LOBBYWINDOW_H

@@ -21,8 +21,14 @@ private slots:
     void handleActionClicked();
     void modeChanged(int index);
 
+public:
+    QString getIP();
+    quint16 getPort();
 private:
     QComboBox* modeSelector;
+
+    QString ip;
+    quint16 port;
 
     // Для сервера
     QWidget* serverPage;

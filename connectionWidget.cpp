@@ -3,6 +3,7 @@
 #include <QLabel>
 #include <QFont>
 #include <QHBoxLayout>
+#include <QMessageBox>
 
 ConnectionWidget::ConnectionWidget(QWidget *parent) : QWidget(parent) {
     QFont font("Inter", 16);
@@ -111,13 +112,47 @@ void ConnectionWidget::modeChanged(int index) {
 
 void ConnectionWidget::handleActionClicked() {
     if (stackedWidget->currentWidget() == serverPage) {
-        quint16 port = serverPortEdit->text().toUShort();
+        QString rawPort = serverPortEdit->text();
+        qDebug() << "Raw port input:" << rawPort;
+
+        QString trimmed = rawPort.trimmed();
+        qDebug() << "Trimmed port input:" << trimmed;
+
+        bool ok = false;
+        quint16 parsedPort = trimmed.toUShort(&ok);
+
+        if (!ok || parsedPort == 0) {
+            qDebug() << "Invalid port entered.";
+            return;
+        }
+
+        port = parsedPort; // ✅ Сохраняем!
+        qDebug() << "Enter port (server): " << port;
         emit startServer(port);
     } else if (stackedWidget->currentWidget() == clientPage) {
-        QString ip = clientIpEdit->text();
-        quint16 port = clientPortEdit->text().toUShort();
+        ip = clientIpEdit->text();
+        bool ok = false;
+        quint16 parsedPort = clientPortEdit->text().trimmed().toUShort(&ok);
+
+        if (!ok || parsedPort == 0) {
+            qDebug() << "Invalid port entered (client).";
+            return;
+        }
+
+        port = parsedPort; // ✅ Тоже сохраняем!
+        qDebug() << "Enter port (client): " << ip << port;
         emit connectToServer(ip, port);
     }
+}
+
+
+
+
+QString ConnectionWidget::getIP(){
+    return ip;
+}
+quint16 ConnectionWidget::getPort(){
+    return port;
 }
 
 

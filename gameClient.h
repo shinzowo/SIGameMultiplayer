@@ -1,22 +1,29 @@
-#ifndef GAMECLIENT_H
-#define GAMECLIENT_H
+#pragma once
 
 #include <QTcpSocket>
 #include <QObject>
 
-class GameClient : public QObject {
+class GameClient : public QObject
+{
     Q_OBJECT
-
 public:
-    explicit GameClient(QObject* parent = nullptr);
-    void connectToServer(const QString& ip, quint16 port);
-    void sendJoinRequest(const QString& playerName);
+    explicit GameClient(QObject *parent = nullptr);
+    ~GameClient();
+    void connectToServer(const QString &host, quint16 port, const QString &nickname);
+
+signals:
+    void lobbyUpdated(const QStringList &players);
 
 private slots:
+    void onConnected();
     void onReadyRead();
+    void onError(QAbstractSocket::SocketError);
 
 private:
-    QTcpSocket* m_socket;
+    QTcpSocket *socket;
+    QString nickname;
+    QByteArray buffer;
 };
 
-#endif // GAMECLIENT_H
+
+

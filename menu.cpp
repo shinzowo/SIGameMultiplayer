@@ -5,7 +5,7 @@
 #include <QPropertyAnimation>
 #include <QTimer>
 #include <QParallelAnimationGroup>
-#include <QLineEdit>
+
 
 QGraphicsDropShadowEffect* createShadowEffect();
 
@@ -67,7 +67,7 @@ MainMenuWidget::MainMenuWidget(QWidget *parent):QWidget(parent){
     QVBoxLayout* panelLayout = new QVBoxLayout(profilePanel);
     QLabel* profileLabel = new QLabel("Профиль");
     profileLabel->setStyleSheet("color: white;");
-    QLineEdit* nameEdit = new QLineEdit();
+    nameEdit = new QLineEdit();
     nameEdit->setPlaceholderText("Введите имя");
     panelLayout->addWidget(profileLabel);
     panelLayout->addWidget(nameEdit);
@@ -143,6 +143,8 @@ MainMenuWidget::MainMenuWidget(QWidget *parent):QWidget(parent){
     connect(hotseatBtn, &QPushButton::clicked, this, &MainMenuWidget::startSingleGameRequested);
     connect(editQuestionBtn, &QPushButton::clicked, this, &MainMenuWidget::editQuestionRequested);
     connect(exitBtn, &QPushButton::clicked, this, &MainMenuWidget::exitRequested);
+
+    connect(profileBtn, &QPushButton::clicked, this, &MainMenuWidget::saveNickname);
 }
 
 QGraphicsDropShadowEffect* createShadowEffect() {
@@ -151,4 +153,17 @@ QGraphicsDropShadowEffect* createShadowEffect() {
     shadow->setOffset(2, 2);
     shadow->setColor(QColor(0, 0, 0, 100));
     return shadow;
+}
+
+QString MainMenuWidget::getNickname(){
+    return nickname;
+}
+
+void MainMenuWidget::saveNickname(){
+    bool isActuallyEmpty = nameEdit->text().isEmpty() ||
+                          nameEdit->text() == nameEdit->placeholderText();
+    if(!isActuallyEmpty){
+        nickname=nameEdit->text();
+    }
+    qDebug()<<"Nickname:"<<nickname;
 }

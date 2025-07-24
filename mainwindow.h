@@ -9,6 +9,8 @@
 #include "GameLogic.h"
 #include "ConnectionWidget.h"
 #include "LobbyWindow.h"
+#include "GameServer.h"
+#include "GameClient.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -32,6 +34,10 @@ private:
     ConnectionWidget *connectionSetup;
     LobbyWindow *lobbyWindow;
 
+    GameServer *server=nullptr;
+    GameClient *client=nullptr;
+
+    bool alreadyDisconnected = false; //от двойного срабатывания
 
 private slots:
     void showConnectionSetup();
@@ -41,6 +47,9 @@ private slots:
     void toMenu();
     void toPlayerSetup();
     void showLobby();
+    void onCreateServerClicked();
+    void onConnectClicked();
+    void onLobbyUpdated(const QStringList &players);
 
 };
 #endif // MAINWINDOW_H

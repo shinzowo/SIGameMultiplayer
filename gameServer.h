@@ -1,31 +1,28 @@
-#ifndef GAMESERVER_H
-#define GAMESERVER_H
+#pragma once
 
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QMap>
-#include "GameLogic.h"
 
-class GameServer : public QTcpServer {
+class GameServer : public QTcpServer
+{
     Q_OBJECT
-
 public:
-    explicit GameServer(QObject* parent = nullptr);
-    void start(quint16 port);
+    explicit GameServer(QObject *parent = nullptr);
+    bool startServer(quint16 port);
+    QString hostNickname;
 
 protected:
     void incomingConnection(qintptr socketDescriptor) override;
 
 private slots:
-    void onClientReadyRead();
     void onClientDisconnected();
+    void onClientReadyRead();
 
 private:
-    GameLogic m_logic;
-    QMap<QTcpSocket*, QString> m_clients;
-
-    void broadcastMessage(const QString& message);
-    void handleMessage(QTcpSocket* client, const QString& message);
+    QMap<QTcpSocket*, QString> clients;
+    void broadcastLobby();
 };
 
-#endif // GAMESERVER_H
+
+
