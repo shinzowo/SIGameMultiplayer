@@ -64,7 +64,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         AnswerValidationDialog.ui
         questiondialog.h
         questiondialog.cpp
-        answervalidationdialog.h answervalidationdialog.cpp
+        answervalidationdialog.h
+        answervalidationdialog.cpp
     )
 else()
     if(ANDROID)
