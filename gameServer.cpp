@@ -1,6 +1,9 @@
 #include "GameServer.h"
-#include <QJsonDocument>
+
+#include <QJsonArray>
 #include <QJsonObject>
+#include <QJsonDocument>
+
 #include <QDebug>
 
 GameServer::GameServer(QObject *parent)
@@ -84,6 +87,26 @@ void GameServer::onClientReadyRead()
             checkAllReady();
             broadcastLobby();
         }
+        else if (type == "question_selected") {
+            int themeIndex = obj["themeIndex"].toInt();
+            int questionIndex = obj["questionIndex"].toInt();
+            QString byPlayer = obj["nickname"].toString();
+
+            gameLogic.markQuestionAnswered(themeIndex, questionIndex);
+
+            QJsonObject broadcast;
+            broadcast["type"] = "question_locked";
+            broadcast["themeIndex"] = themeIndex;
+            broadcast["questionIndex"] = questionIndex;
+            broadcast["by"] = byPlayer;
+
+            QByteArray bData = QJsonDocument(broadcast).toJson(QJsonDocument::Compact) + "\n";
+            for (QTcpSocket *socket : clients.keys()) {
+                if (socket->state() == QAbstractSocket::ConnectedState)
+                    socket->write(bData);
+            }
+        }
+
     }
 }
 
@@ -128,6 +151,16 @@ void GameServer::checkAllReady()
     }
 
     if (allReady) {
+        // Подготовка игроков
+        QList<Player> players;
+        for (const QString &nickname : clients.values()) {
+            Player p(nickname);
+            players.append(p);
+        }
+
+        // Инициализация логики
+        gameLogic.startGame(players, questionFilePath);
+
         QJsonObject message;
         message["type"] = "game_start";
         QByteArray data = QJsonDocument(message).toJson(QJsonDocument::Compact) + "\n";
@@ -136,8 +169,78 @@ void GameServer::checkAllReady()
             if (socket->state() == QAbstractSocket::ConnectedState)
                 socket->write(data);
         }
+        sendGameData();
     }
 }
+
+void GameServer::sendGameData()
+{
+
+    QJsonObject msg;
+    msg["type"] = "game_data";
+    msg["title"] = gameLogic.getCurrentRound().name;
+
+    QJsonArray themesArray;
+    QJsonArray questionsArray;
+
+    const GameRound &round = gameLogic.getCurrentRound();
+    int questionId = 1;
+
+    for (int t = 0; t < round.themes.size(); ++t) {
+        const Theme &theme = round.themes[t];
+        themesArray.append(theme.name);
+
+        for (int q = 0; q < theme.questions.size(); ++q) {
+            const Question &ques = theme.questions[q];
+            QJsonObject qObj;
+            qObj["id"] = questionId++;
+            qObj["themeIndex"] = t;
+            qObj["questionIndex"] = q;
+            qObj["cost"] = ques.cost;
+            qObj["text"] = ques.text;
+            qObj["type"] = ques.type;
+            qObj["answered"] = ques.answered;
+            questionsArray.append(qObj);
+        }
+    }
+
+    QJsonArray playerArray;
+
+    // Сначала добавим ведущего
+    for (const Player &p : gameLogic.getPlayers()) {
+        if (p.getName() == hostNickname) {
+            QJsonObject pObj;
+            pObj["name"] = p.getName();
+            pObj["score"] = p.getScore();
+            playerArray.append(pObj);
+            break;
+        }
+    }
+
+    // Затем всех остальных
+    for (const Player &p : gameLogic.getPlayers()) {
+        if (p.getName() != hostNickname) {
+            QJsonObject pObj;
+            pObj["name"] = p.getName();
+            pObj["score"] = p.getScore();
+            playerArray.append(pObj);
+        }
+    }
+
+
+    msg["themes"] = themesArray;
+    msg["questions"] = questionsArray;
+    msg["players"] = playerArray;
+
+    QByteArray data = QJsonDocument(msg).toJson(QJsonDocument::Compact) + "\n";
+
+    for (QTcpSocket *socket : clients.keys()) {
+        if (socket->state() == QAbstractSocket::ConnectedState)
+            socket->write(data);
+    }
+
+}
+
 
 
 

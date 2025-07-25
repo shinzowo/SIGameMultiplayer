@@ -7,6 +7,10 @@
 #include <QMessageBox>
 
 
+
+void showAnswerValidationDialog(const QString& question, const QString& answer);
+
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -79,10 +83,15 @@ void MainWindow::showConnectionSetup()
     stackedWidget->setCurrentWidget(connectionSetup);
 }
 
+
 void MainWindow::showEditQuestionPack(){
     GameEditorWindow *editor = new GameEditorWindow(this);
     editor->show();
 }
+
+
+
+
 void MainWindow::showPlayerSetup() {
     stackedWidget->setCurrentWidget(setupSinglePlayWidget);
 }
@@ -136,14 +145,16 @@ void MainWindow::onCreateServerClicked()
     QTimer::singleShot(100, this, [=]() {
         client = new GameClient(this);
 
-        connect(lobbyWindow, &LobbyWindow::readyStatusChanged, client, &GameClient::sendReadyStatus);
-        connect(client, &GameClient::gameStarted, this, &MainWindow::onGameStart);
-        connect(client, &GameClient::lobbyUpdated, this, &MainWindow::onLobbyUpdated);
+        connectClients();
 
         client->connectToServer("127.0.0.1", port, nickname);
+
+
     });
 
     showLobby();
+    //устанавливаем вид как хост
+    gameMPWindow->setAsHost();
 }
 
 // MainWindow::onConnectClicked()
@@ -155,13 +166,14 @@ void MainWindow::onConnectClicked()
     qDebug()<<"onConnectClicked"<<ip<<" "<<port<<" "<<nickname;
     client = new GameClient(this);
 
-    connect(lobbyWindow, &LobbyWindow::readyStatusChanged, client, &GameClient::sendReadyStatus);
-    connect(client, &GameClient::gameStarted, this, &MainWindow::onGameStart);
-    connect(client, &GameClient::lobbyUpdated, this, &MainWindow::onLobbyUpdated);
+    connectClients();
+
 
     client->connectToServer(ip, port, nickname);
 
+
     showLobby();
+    gameMPWindow->setAsClient();
 }
 
 // В onLobbyUpdated:
@@ -207,6 +219,13 @@ void MainWindow::onGameStart()
 {
     qDebug() << "Game starting!";
     stackedWidget->setCurrentWidget(gameMPWindow);
+}
+
+void MainWindow::connectClients(){
+    connect(lobbyWindow, &LobbyWindow::readyStatusChanged, client, &GameClient::sendReadyStatus);
+    connect(client, &GameClient::gameStarted, this, &MainWindow::onGameStart);
+    connect(client, &GameClient::lobbyUpdated, this, &MainWindow::onLobbyUpdated);
+    connect(client, &GameClient::gameDataReceived, gameMPWindow, &MultiplayerWindow::onGameDataReceived);
 }
 
 

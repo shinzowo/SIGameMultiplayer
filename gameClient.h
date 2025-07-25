@@ -17,6 +17,10 @@ public:
 signals:
     void lobbyUpdated(const QStringList &players);
     void gameStarted();
+    void gameDataReceived(const QString& title,
+                              const QJsonArray& players,
+                              const QJsonArray& themes,
+                              const QJsonArray& questions);
 
 private slots:
     void onConnected();

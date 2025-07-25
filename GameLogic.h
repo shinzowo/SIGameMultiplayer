@@ -30,10 +30,12 @@ public:
     void markQuestionAnswered(int themeIndex, int questionIndex);
     bool allQuestionsAnswered() const;
 
+
 private:
     QList<Player> m_players;
     QuestionPackage m_package;
     int m_currentRoundIndex = 0;
+    QString HostName;
 };
 
 #endif // GAMELOGIC_H

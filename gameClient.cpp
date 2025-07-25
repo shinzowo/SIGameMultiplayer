@@ -1,6 +1,7 @@
 #include "GameClient.h"
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonArray>
 #include <QDebug>
 
 GameClient::GameClient(QObject *parent)
@@ -69,6 +70,15 @@ void GameClient::onReadyRead()
             qDebug() << "Received game_start, emitting signal";
             continue;
         }
+        else if (obj["type"].toString() == "game_data") {
+            QString title = obj["title"].toString();
+            QJsonArray themes = obj["themes"].toArray();
+            QJsonArray questions = obj["questions"].toArray();
+            QJsonArray players = obj["players"].toArray();
+
+            emit gameDataReceived(title, players, themes, questions);
+        }
+
     }
 }
 

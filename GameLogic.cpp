@@ -1,5 +1,5 @@
 #include "GameLogic.h"
-
+#include <QDebug>
 GameLogic::GameLogic(QObject* parent)
     : QObject(parent) {}
 
@@ -32,8 +32,13 @@ int GameLogic::getPlayerCount() const {
 }
 
 GameRound GameLogic::getCurrentRound() const {
+    if (m_currentRoundIndex >= m_package.getRoundCount()) {
+        qWarning() << "getCurrentRound(): index out of range:" << m_currentRoundIndex;
+        return GameRound(); // вернёт пустой объект
+    }
     return m_package.getRound(m_currentRoundIndex);
 }
+
 
 Question GameLogic::getQuestion(int themeIndex, int questionIndex) const {
     GameRound round = getCurrentRound();
@@ -85,5 +90,7 @@ bool GameLogic::allQuestionsAnswered() const {
     }
     return true;
 }
+
+
 
 

@@ -12,6 +12,16 @@ public:
 
     void setAsHost();
     void setAsClient();
+    void updatePlayersUI(const QJsonArray& players);
+    void showQuestionDialog(const QString &question, int time);
+    void showAnswerValidationDialog(const QString& question, const QString& answer);
+public slots:
+    void onGameDataReceived(const QString& title,
+                            const QJsonArray& players,
+                            const QJsonArray& themes,
+                            const QJsonArray& questions);
+
+
 
 private:
     Ui::MultiplayerWindow *ui;
