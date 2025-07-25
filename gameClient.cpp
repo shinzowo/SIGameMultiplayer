@@ -78,7 +78,7 @@ void GameClient::onReadyRead()
 
             emit gameDataReceived(title, players, themes, questions);
         }
-
+        emit jsonReceived(obj);
     }
 }
 
@@ -108,6 +108,23 @@ void GameClient::sendReadyStatus(bool isReady)
         qDebug() << "Failed to send ready status!";
     }
 }
+
+void GameClient::sendJson(const QJsonObject &obj)
+{
+    if (!socket || !socket->isOpen()) {
+        qWarning() << "Socket not connected!";
+        return;
+    }
+
+    QByteArray data = QJsonDocument(obj).toJson(QJsonDocument::Compact) + "\n";
+    socket->write(data);
+    if (!socket->waitForBytesWritten(1000)) {
+        qWarning() << "Failed to send data to server!";
+    } else {
+        qDebug() << "Sent JSON:" << data;
+    }
+}
+
 
 
 

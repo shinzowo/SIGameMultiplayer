@@ -43,6 +43,10 @@ void GameServer::onClientDisconnected()
     broadcastLobby();
 }
 
+// В классе GameServer добавить приватные поля
+QString playerWhoBuzzed;  // Ник игрока, который первый нажал "buzz"
+bool buzzActive = false;  // Флаг, что сейчас ожидается ответ после базза
+
 void GameServer::onClientReadyRead()
 {
     auto *client = qobject_cast<QTcpSocket*>(sender());
@@ -66,6 +70,7 @@ void GameServer::onClientReadyRead()
 
         QJsonObject obj = doc.object();
         QString type = obj["type"].toString();
+
         if (type == "join") {
             QString nickname = obj["nickname"].toString();
             clients[client] = nickname;
@@ -78,12 +83,10 @@ void GameServer::onClientReadyRead()
             broadcastLobby();
         }
         else if (type == "ready_status") {
-            qDebug()<<"onClientReadyRead ready status";
             QString nickname = obj["nickname"].toString();
             bool isReady = obj["is_ready"].toBool();
             readyPlayers[nickname] = isReady;
 
-            // Проверяем, все ли готовы
             checkAllReady();
             broadcastLobby();
         }
@@ -92,23 +95,100 @@ void GameServer::onClientReadyRead()
             int questionIndex = obj["questionIndex"].toInt();
             QString byPlayer = obj["nickname"].toString();
 
+            if (byPlayer != hostNickname) {
+                qDebug() << "Non-host tried to select question";
+                return;
+            }
+
+            Question question = gameLogic.getQuestion(themeIndex, questionIndex);
+
+            if (question.answered) {
+                qDebug() << "Question already answered:" << themeIndex << questionIndex;
+                continue;
+            }
+
+            // Отмечаем вопрос отвеченным
             gameLogic.markQuestionAnswered(themeIndex, questionIndex);
 
+            // Формируем JSON для отправки вопроса всем клиентам
+            QJsonObject questionJson;
+            questionJson["cost"] = question.cost;
+            questionJson["text"] = question.text;
+            questionJson["answer"] = question.answer;
+            questionJson["type"] = question.type;
+            questionJson["answered"] = question.answered;
+
             QJsonObject broadcast;
-            broadcast["type"] = "question_locked";
+            broadcast["type"] = "question_started";
             broadcast["themeIndex"] = themeIndex;
             broadcast["questionIndex"] = questionIndex;
             broadcast["by"] = byPlayer;
+            broadcast["question"] = questionJson;
 
             QByteArray bData = QJsonDocument(broadcast).toJson(QJsonDocument::Compact) + "\n";
             for (QTcpSocket *socket : clients.keys()) {
                 if (socket->state() == QAbstractSocket::ConnectedState)
                     socket->write(bData);
             }
-        }
 
+            buzzActive = true;     // Разрешаем кнопки buzzer для игроков
+            playerWhoBuzzed.clear();
+        }
+        else if (type == "buzz") {
+            if (!buzzActive) {
+                qDebug() << "Buzz ignored, not active phase";
+                continue;
+            }
+            QString nickname = clients[client];
+            if (playerWhoBuzzed.isEmpty()) {
+                playerWhoBuzzed = nickname;
+                buzzActive = false;
+
+                QJsonObject buzzMsg;
+                buzzMsg["type"] = "player_buzzed";
+                buzzMsg["nickname"] = nickname;
+                QByteArray bData = QJsonDocument(buzzMsg).toJson(QJsonDocument::Compact) + "\n";
+                for (QTcpSocket *sock : clients.keys()) {
+                    if (sock->state() == QAbstractSocket::ConnectedState)
+                        sock->write(bData);
+                }
+
+                qDebug() << "Player buzzed:" << nickname;
+            } else {
+                qDebug() << "Buzz ignored, already buzzed by" << playerWhoBuzzed;
+            }
+        }
+        else if (type == "answer_validated") {
+            if (playerWhoBuzzed.isEmpty()) {
+                qDebug() << "No player buzzed, ignoring answer_validated";
+                continue;
+            }
+
+            bool correct = obj["correct"].toBool();
+
+            int themeIndex = obj["themeIndex"].toInt();
+            int questionIndex = obj["questionIndex"].toInt();
+
+            // Получаем стоимость вопроса (очки)
+            Question question = gameLogic.getQuestion(themeIndex, questionIndex);
+            int points = question.cost;
+
+            if (correct) {
+                gameLogic.updateScore(playerWhoBuzzed, points);
+            }
+
+            playerWhoBuzzed.clear();
+            buzzActive = false;
+
+            sendGameData();
+
+            qDebug() << "Answer validated for" << playerWhoBuzzed << "correct:" << correct;
+        }
     }
 }
+
+
+
 
 void GameServer::broadcastLobby()
 {

@@ -1,26 +1,31 @@
 #include "MultiplayerWindow.h"
 #include "ui_MultiplayerWindow.h"
 
-#include <QJsonArray>
-#include <QJsonObject>
-#include <QJsonDocument>
 
-#include "answervalidationdialog.h"
-#include "questiondialog.h"
+
+
 
 MultiplayerWindow::MultiplayerWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MultiplayerWindow)
 {
     ui->setupUi(this);
+    connectQuestionButtons();
 }
 
 MultiplayerWindow::~MultiplayerWindow() {
     delete ui;
 }
 
+void MultiplayerWindow::setClient(GameClient* c) {
+    client = c;
+    connect(client, &GameClient::jsonReceived, this, &MultiplayerWindow::onServerMessageReceived);
+
+}
+void MultiplayerWindow::setNickname(const QString& name) { nickname = name; }
 
 void MultiplayerWindow::setAsHost() {
+    isHost=true;
     ui->answerButton->setVisible(false);
     ui->answerButton->setEnabled(false);
     ui->addScore1->setVisible(true);
@@ -35,6 +40,7 @@ void MultiplayerWindow::setAsHost() {
 }
 
 void MultiplayerWindow::setAsClient() {
+    isHost=false;
     ui->answerButton->setVisible(true);
     ui->addScore1->setVisible(false);
     ui->addScore2->setVisible(false);
@@ -117,33 +123,175 @@ void MultiplayerWindow::updatePlayersUI(const QJsonArray& players)
     }
 }
 
-void MultiplayerWindow::showAnswerValidationDialog(const QString& question, const QString& answer) {
+
+void MultiplayerWindow::showQuestionDialog(const QString &question, int time) {
+    if (questionDialog) {
+        questionDialog->close();
+        delete questionDialog;
+    }
+
+    questionDialog = new QuestionDialog(this);
+    questionDialog->setWindowFlags(questionDialog->windowFlags() | Qt::WindowStaysOnTopHint);
+    questionDialog->setQuestionText(question);
+    questionDialog->startCountdown(time);
+
+    answerAccepted = false;
+    ui->answerButton->setEnabled(true);
+
+    connect(questionDialog, &QuestionDialog::timeout, this, [=]() {
+        if (client) {
+            QJsonObject msg;
+            msg["type"] = "question_timeout";
+            client->sendJson(msg);
+        }
+        questionDialog->close();
+    });
+
+    connect(ui->answerButton, &QPushButton::clicked, this, [=]() {
+        if (!answerAccepted) {
+            answerAccepted = true;
+            ui->answerButton->setEnabled(false);
+            if (client) {
+                QJsonObject msg;
+                msg["type"] = "player_answer_attempt";
+                msg["nickname"] = nickname;  // Предполагается, что nickname есть
+                client->sendJson(msg);
+            }
+        }
+    });
+
+    questionDialog->show();
+}
+
+
+
+void MultiplayerWindow::onQuestionSelected(int themeIndex, int questionIndex) {
+    QJsonObject msg;
+    msg["type"] = "question_selected";
+    msg["themeIndex"] = themeIndex;
+    msg["questionIndex"] = questionIndex;
+    client->sendJson(msg);
+}
+
+void MultiplayerWindow::handleQuestionStart(const QJsonObject &msg) {
+    currentQuestion = msg; // сохраним для оценки
+    showQuestionDialog(msg["text"].toString(), 20);
+    ui->answerButton->setEnabled(false);
+}
+
+void MultiplayerWindow::connectQuestionButtons()
+{
+
+    QLayout* layout = ui->gridLayout;
+
+    if (!layout) {
+        qWarning() << "Question grid layout not found!";
+        return;
+    }
+
+    for (int i = 0; i < layout->count(); ++i) {
+        QLayoutItem* item = layout->itemAt(i);
+        if (!item) continue;
+
+        QWidget* widget = item->widget();
+        if (!widget) continue;
+
+        QPushButton* button = qobject_cast<QPushButton*>(widget);
+        if (!button) continue;
+
+        // Подключаем слот на нажатие
+        connect(button, &QPushButton::clicked, this, &MultiplayerWindow::onQuestionButtonClicked);
+    }
+}
+
+void MultiplayerWindow::onQuestionButtonClicked()
+{
+    QPushButton* button = qobject_cast<QPushButton*>(sender());
+    if (!button) return;
+
+    // Предположим, что ты хочешь передавать тему и индекс вопроса через свойства кнопки
+    // Например, установи эти свойства при создании кнопок:
+    // button->setProperty("themeIndex", themeIndex);
+    // button->setProperty("questionIndex", questionIndex);
+
+    int themeIndex = button->property("themeIndex").toInt();
+    int questionIndex = button->property("questionIndex").toInt();
+
+    if (client) {
+        QJsonObject msg;
+        msg["type"] = "question_selected";
+        msg["themeIndex"] = themeIndex;
+        msg["questionIndex"] = questionIndex;
+        msg["nickname"] = nickname;  // твоя переменная с ником
+        client->sendJson(msg);
+    }
+}
+
+
+void MultiplayerWindow::handleEnableBuzz() {
+    ui->answerButton->setEnabled(true);
+}
+
+void MultiplayerWindow::on_answerButton_clicked() {
+    QJsonObject msg;
+    msg["type"] = "buzz";
+    msg["nickname"] = nickname;
+    client->sendJson(msg);
+    ui->answerButton->setEnabled(false);
+}
+
+void MultiplayerWindow::onServerMessageReceived(const QJsonObject& obj)
+{
+    QString type = obj["type"].toString();
+
+    if (type == "question_started") {
+        QJsonObject question = obj["question"].toObject();
+        QString text = question["text"].toString();
+        int cost = question["cost"].toInt();
+
+        // Показываем диалог с вопросом, например, на 30 секунд
+        showQuestionDialog(text, 30); // 30 — пример, можно заменить
+
+
+    }
+}
+
+
+void MultiplayerWindow::handlePlayerBuzzed(const QString &nickname) {
+    ui->answerButton->setEnabled(false);
+
+}
+
+void MultiplayerWindow::handleAnswerSubmitted(const QJsonObject &msg) {
+    if (isHost) {
+        showAnswerValidationDialog(msg["question"].toString(), msg["answer"].toString());
+    }
+}
+
+void MultiplayerWindow::showAnswerValidationDialog(const QString &question, const QString &answer) {
     auto dialog = new AnswerValidationDialog(this);
     dialog->setQuestionAndAnswer(question, answer);
 
     connect(dialog, &AnswerValidationDialog::answerEvaluated, this, [=](bool correct) {
-        // Обработка ответа ведущим (true/false)
-        qDebug() << "Ведущий оценил ответ как:" << (correct ? "Правильный" : "Неправильный");
-        // Здесь можешь отправить результат на сервер
-    });
-
-    dialog->exec(); // показать модально
-}
-
-void MultiplayerWindow::showQuestionDialog(const QString &question, int time) {
-    QuestionDialog* dialog = new QuestionDialog(this);
-    dialog->setWindowFlags(dialog->windowFlags() | Qt::WindowStaysOnTopHint);
-    dialog->show();
-    dialog->setQuestionText(question);
-    dialog->startCountdown(time);
-
-    connect(dialog, &QuestionDialog::timeout, this, [=]() {
-        // Например, отправка серверу, что время вышло
-        // sendAnswerTimeoutToServer();
+        QJsonObject msg;
+        msg["type"] = "answer_validated";
+        msg["correct"] = correct;
+        client->sendJson(msg);
     });
 
     dialog->exec();
 }
+void MultiplayerWindow::setButtonsEnabledForHost(bool enabled) {
+    QLayout* layout = ui->gridLayout;
+    for (int i = 0; i < layout->count(); ++i) {
+        QLayoutItem* item = layout->itemAt(i);
+        if (!item) continue;
+        QPushButton* btn = qobject_cast<QPushButton*>(item->widget());
+        if (btn) btn->setEnabled(enabled);
+    }
+}
+
+
 
 
 

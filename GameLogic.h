@@ -30,6 +30,8 @@ public:
     void markQuestionAnswered(int themeIndex, int questionIndex);
     bool allQuestionsAnswered() const;
 
+    void updateScore(const QString &playerName, int points);
+
 
 private:
     QList<Player> m_players;

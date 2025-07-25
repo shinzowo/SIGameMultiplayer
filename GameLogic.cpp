@@ -91,6 +91,15 @@ bool GameLogic::allQuestionsAnswered() const {
     return true;
 }
 
+void GameLogic::updateScore(const QString &playerName, int points) {
+    for (Player &p : m_players) {  // предположим, что players — контейнер игроков
+        if (p.getName() == playerName) {
+            p.addScore(points);
+            break;
+        }
+    }
+}
+
 
 
 

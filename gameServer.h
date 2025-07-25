@@ -34,6 +34,9 @@ private:
     GameLogic gameLogic;
     QString questionFilePath = QCoreApplication::applicationDirPath() + "/question.json";
 
+    QString playerWhoBuzzed;
+    bool buzzActive = false;
+
 
 
 };

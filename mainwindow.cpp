@@ -61,6 +61,8 @@ MainWindow::MainWindow(QWidget *parent)
 
 
     connect(gameWidget, &GameWidget::onBackClicked, this, &MainWindow::toPlayerSetup);
+
+
 }
 void MainWindow::showConnectionSetup()
 {
@@ -155,6 +157,8 @@ void MainWindow::onCreateServerClicked()
     showLobby();
     //устанавливаем вид как хост
     gameMPWindow->setAsHost();
+    gameMPWindow->setButtonsEnabledForHost(true);
+
 }
 
 // MainWindow::onConnectClicked()
@@ -174,6 +178,7 @@ void MainWindow::onConnectClicked()
 
     showLobby();
     gameMPWindow->setAsClient();
+    gameMPWindow->setButtonsEnabledForHost(false);
 }
 
 // В onLobbyUpdated:
@@ -226,6 +231,12 @@ void MainWindow::connectClients(){
     connect(client, &GameClient::gameStarted, this, &MainWindow::onGameStart);
     connect(client, &GameClient::lobbyUpdated, this, &MainWindow::onLobbyUpdated);
     connect(client, &GameClient::gameDataReceived, gameMPWindow, &MultiplayerWindow::onGameDataReceived);
+
+    gameMPWindow->setClient(client);
+
+    gameMPWindow->setNickname(menuWidget->getNickname());
+
+
 }
 
 
