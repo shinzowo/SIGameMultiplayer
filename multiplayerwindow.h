@@ -46,10 +46,6 @@ public slots:
 signals:
     void answerEvaluatedByHost(bool correct);
 
-    void showQuestionDialog(const QString &question, int time);
-public slots:
-    void showAnswerValidationDialog(const QString& question, const QString& answer);
-
 private:
     Ui::MultiplayerWindow *ui;
     GameClient* client = nullptr;

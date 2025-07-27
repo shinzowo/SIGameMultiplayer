@@ -49,7 +49,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(menuWidget, &MainMenuWidget::startMultiplayerGameRequested, this, &MainWindow::showConnectionSetup);
     connect(menuWidget, &MainMenuWidget::startSingleGameRequested, this, &MainWindow::showPlayerSetup);
-    connect(menuWidget, &MainMenuWidget::editQuestionRequested, this, &MainWindow::showEditQuestionPack);
+
     connect(menuWidget, &MainMenuWidget::exitRequested, this, &MainWindow::close);
 
     connect(setupSinglePlayWidget, &PlayerSetupWidget::playersReady, this, &MainWindow::startGame);
@@ -91,29 +91,10 @@ void MainWindow::showConnectionSetup()
     // 3. Показываем экран подключения
     stackedWidget->setCurrentWidget(connectionSetup);
 }
-//Диалоговые окна
-//Вызов диалогового окна ответа
-void MultiplayerWindow::showQuestionDialog(const QString &question, int time) {
-    auto dialog = new QuestionDialog(this);
-    dialog->setWindowFlags(dialog->windowFlags() | Qt::WindowStaysOnTopHint);
-    dialog->show();
-    dialog->setQuestionText(question);
-    dialog->startCountdown(time);
-
-    connect(dialog, &QuestionDialog::timeout, this, [=]() {
-        // Например, отправка серверу, что время вышло
-        // sendAnswerTimeoutToServer();
-    });
-
-    dialog->exec();
-}
 
 
-void MainWindow::showEditQuestionPack(){
-    //===ТЕСТОВАЯ ЧАСТЬ КОДА===
-    gameMPWindow->showAnswerValidationDialog("Столица Франции?", "Париж");
 
-}
+
 
 
 

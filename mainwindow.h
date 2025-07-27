@@ -49,7 +49,6 @@ private slots:
 
     void showConnectionSetup();
     void showPlayerSetup();
-    void showEditQuestionPack();
     void startGame(const QStringList playerNames, const QString& filePath);
     void toMenu();
     void toPlayerSetup();
