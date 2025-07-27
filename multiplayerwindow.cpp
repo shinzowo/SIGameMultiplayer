@@ -240,7 +240,7 @@ void MultiplayerWindow::onQuestionButtonClicked()
 {
     QPushButton* button = qobject_cast<QPushButton*>(sender());
     if (!button) return;
-
+    button->setText("-");
 
     int themeIndex = button->property("themeIndex").toInt();
     int questionIndex = button->property("questionIndex").toInt();

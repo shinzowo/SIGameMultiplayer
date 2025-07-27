@@ -66,6 +66,11 @@ MainWindow::MainWindow(QWidget *parent)
 }
 void MainWindow::showConnectionSetup()
 {
+    if(menuWidget->getNickname().isEmpty()){
+        QMessageBox::critical(this, "Ошибка", "Введите никнейм");
+
+        return;
+    }
     // 1. Отключаем клиента
     if (client) {
         client->deleteLater();     // автоматически вызывает disconnectFromHost()
