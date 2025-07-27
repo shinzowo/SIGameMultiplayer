@@ -27,6 +27,11 @@ set(PROJECT_SOURCES
 
     LobbyWindow.ui
 
+
+    QuestionDialog.ui
+
+    AnswerValidationDialog.ui
+
     res.qrc
 )
 
@@ -61,6 +66,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         questiondialog.h
         questiondialog.cpp
         AnswerValidationDialog.ui
+
     )
 else()
     if(ANDROID)

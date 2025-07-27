@@ -5,6 +5,8 @@
 
 
 
+#include "AnswerValidationDialog.h"
+
 MultiplayerWindow::MultiplayerWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MultiplayerWindow)
@@ -51,6 +53,7 @@ void MultiplayerWindow::setAsClient() {
     ui->deductScore3->setVisible(false);
     ui->deductScore4->setVisible(false);
 }
+
 
 void MultiplayerWindow::onGameDataReceived(const QString& title,
                                            const QJsonArray& players,
@@ -366,8 +369,4 @@ void MultiplayerWindow::setButtonsEnabledForHost(bool enabled) {
         if (btn) btn->setEnabled(enabled);
     }
 }
-
-
-
-
 
