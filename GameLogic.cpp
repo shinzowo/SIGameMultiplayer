@@ -92,9 +92,10 @@ bool GameLogic::allQuestionsAnswered() const {
 }
 
 void GameLogic::updateScore(const QString &playerName, int points) {
-    for (Player &p : m_players) {  // предположим, что players — контейнер игроков
+    for (Player &p : m_players) {
         if (p.getName() == playerName) {
             p.addScore(points);
+            qDebug() << "Score updated:" << p.getName() << "->" << points;
             break;
         }
     }

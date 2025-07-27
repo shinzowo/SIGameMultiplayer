@@ -15,6 +15,7 @@ public:
     void sendReadyStatus(bool isReady);
     void sendJson(const QJsonObject &obj);
 
+
 signals:
     void lobbyUpdated(const QStringList &players);
     void gameStarted();

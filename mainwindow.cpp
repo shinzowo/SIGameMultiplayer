@@ -140,6 +140,7 @@ void MainWindow::onCreateServerClicked()
         return;
     }
     server->hostNickname = nickname;
+    server->setQuestionFilePath(connectionSetup->getLoadPath());
     server->startServer(port);
 
 

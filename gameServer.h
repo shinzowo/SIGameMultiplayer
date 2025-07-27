@@ -17,6 +17,8 @@ public:
     QString hostNickname;
     void sendGameData();
 
+    void setQuestionFilePath(QString filePath);
+
 protected:
     void incomingConnection(qintptr socketDescriptor) override;
 

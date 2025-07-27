@@ -175,14 +175,17 @@ void GameServer::onClientReadyRead()
 
             if (correct) {
                 gameLogic.updateScore(playerWhoBuzzed, points);
+            } else {
+                gameLogic.updateScore(playerWhoBuzzed, -points);  // штраф
             }
 
-            playerWhoBuzzed.clear();
+
             buzzActive = false;
 
             sendGameData();
 
             qDebug() << "Answer validated for" << playerWhoBuzzed << "correct:" << correct;
+            playerWhoBuzzed.clear();
         }
     }
 }
@@ -255,10 +258,13 @@ void GameServer::checkAllReady()
 
 void GameServer::sendGameData()
 {
+    qDebug() << "sendGameData() called";
 
     QJsonObject msg;
     msg["type"] = "game_data";
     msg["title"] = gameLogic.getCurrentRound().name;
+
+    qDebug() << "Current round title:" << msg["title"].toString();
 
     QJsonArray themesArray;
     QJsonArray questionsArray;
@@ -269,6 +275,8 @@ void GameServer::sendGameData()
     for (int t = 0; t < round.themes.size(); ++t) {
         const Theme &theme = round.themes[t];
         themesArray.append(theme.name);
+
+        qDebug() << "Theme[" << t << "]:" << theme.name << "with" << theme.questions.size() << "questions";
 
         for (int q = 0; q < theme.questions.size(); ++q) {
             const Question &ques = theme.questions[q];
@@ -281,45 +289,70 @@ void GameServer::sendGameData()
             qObj["type"] = ques.type;
             qObj["answered"] = ques.answered;
             questionsArray.append(qObj);
+
+            qDebug() << "  Question[" << q << "] cost:" << ques.cost << "answered:" << ques.answered
+                     << "text:" << ques.text.left(30);  // Показываем первые 30 символов
         }
     }
 
     QJsonArray playerArray;
 
-    // Сначала добавим ведущего
-    for (const Player &p : gameLogic.getPlayers()) {
+    const auto &players = gameLogic.getPlayers();
+
+    qDebug() << "Players count:" << players.size() << ", Host:" << hostNickname;
+
+    // Добавляем ведущего первым
+    bool hostAdded = false;
+    for (const Player &p : players) {
         if (p.getName() == hostNickname) {
             QJsonObject pObj;
             pObj["name"] = p.getName();
             pObj["score"] = p.getScore();
             playerArray.append(pObj);
+            hostAdded = true;
+            qDebug() << "Added host player:" << p.getName() << "score:" << p.getScore();
             break;
         }
     }
+    if (!hostAdded) {
+        qWarning() << "Host player" << hostNickname << "not found in players list!";
+    }
 
-    // Затем всех остальных
-    for (const Player &p : gameLogic.getPlayers()) {
+    // Добавляем остальных
+    for (const Player &p : players) {
         if (p.getName() != hostNickname) {
             QJsonObject pObj;
             pObj["name"] = p.getName();
             pObj["score"] = p.getScore();
             playerArray.append(pObj);
+            qDebug() << "Added player:" << p.getName() << "score:" << p.getScore();
         }
     }
-
 
     msg["themes"] = themesArray;
     msg["questions"] = questionsArray;
     msg["players"] = playerArray;
 
-    QByteArray data = QJsonDocument(msg).toJson(QJsonDocument::Compact) + "\n";
+    QJsonDocument doc(msg);
+    QByteArray data = doc.toJson(QJsonDocument::Compact) + "\n";
+
+    qDebug() << "Broadcasting game_data to clients, data size:" << data.size();
+    qDebug() << "JSON data:" << data;
 
     for (QTcpSocket *socket : clients.keys()) {
-        if (socket->state() == QAbstractSocket::ConnectedState)
+        if (socket->state() == QAbstractSocket::ConnectedState) {
+            qDebug() << "Sending data to client:" << clients[socket];
             socket->write(data);
+        } else {
+            qDebug() << "Socket not connected:" << clients[socket];
+        }
     }
-
 }
+
+void GameServer::setQuestionFilePath(QString filePath){
+    questionFilePath=filePath;
+}
+
 
 
 

@@ -50,11 +50,19 @@ private:
     Ui::MultiplayerWindow *ui;
     GameClient* client = nullptr;
     QString nickname;
+    QString playerWhoBuzzed;
 
     bool isHost=false;
     QuestionDialog* questionDialog = nullptr;
     bool answerAccepted = false;
     QJsonObject currentQuestion; // Хранит текущий вопрос, для валидации и отправки
+
+    QString currentQuestionText;
+    QString currentCorrectAnswer;
+
+
+    int currentThemeIndex = -1;
+    int currentQuestionIndex = -1;
 
 };
 

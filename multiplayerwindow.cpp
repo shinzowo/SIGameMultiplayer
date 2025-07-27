@@ -1,7 +1,7 @@
 #include "MultiplayerWindow.h"
 #include "ui_MultiplayerWindow.h"
-
-
+#include <QMessageBox>
+#include <QThread>
 
 
 
@@ -57,6 +57,7 @@ void MultiplayerWindow::onGameDataReceived(const QString& title,
                                            const QJsonArray& themes,
                                            const QJsonArray& questions)
 {
+    qDebug()<<"onGameDataReceived is called";
     updatePlayersUI(players);
 
 
@@ -92,36 +93,65 @@ void MultiplayerWindow::onGameDataReceived(const QString& title,
 
 
 }
-void MultiplayerWindow::updatePlayersUI(const QJsonArray& players)
-{
-    const int maxPlayers = 5;
-    int visiblePlayers = players.size();
+void MultiplayerWindow::updatePlayersUI(const QJsonArray& players) {
+    qDebug() << "--- UI UPDATE START ---";
+    qDebug() << "Current thread:" << QThread::currentThread();
 
-    // Первый игрок — ведущий, его отобразим отдельно
-    if (visiblePlayers > 0) {
+    // Проверка входных данных
+    qDebug() << "Players data:";
+    for (const QJsonValue &p : players) {
+        auto obj = p.toObject();
+        qDebug() << "  " << obj["name"].toString() << obj["score"].toInt();
+    }
+
+    // Обновление ведущего
+    if (!players.isEmpty()) {
         QJsonObject host = players[0].toObject();
+        qDebug() << "Updating host label:" << host["name"].toString();
         ui->labelNickname->setText("Ведущий: " + host["name"].toString());
     }
 
-    // Игроки (начиная со второго)
-    for (int i = 1; i < maxPlayers; ++i) {
-        QGroupBox* box = findChild<QGroupBox*>(QString("player%1Box").arg(i));
-        QLabel* score = findChild<QLabel*>(QString("player%1Score").arg(i));
+    // Обновление игроков
+    for (int i = 1; i < 5; ++i) {
+        QString boxName = QString("player%1Box").arg(i);
+        QString scoreName = QString("player%1Score").arg(i);
 
-        if (i < visiblePlayers) {
+        QGroupBox* box = findChild<QGroupBox*>(boxName);
+        QLabel* score = findChild<QLabel*>(scoreName);
+
+        qDebug() << "\nPlayer" << i << "elements:";
+        qDebug() << "Box:" << boxName << "found:" << (box != nullptr);
+        qDebug() << "Score:" << scoreName << "found:" << (score != nullptr);
+
+        if (i < players.size()) {
             QJsonObject p = players[i].toObject();
             QString name = p["name"].toString();
             int scr = p["score"].toInt();
 
-            if (box) box->setTitle(name);
-            if (score) score->setText(QString::number(scr));
+            qDebug() << "Setting values - Name:" << name << "Score:" << scr;
 
-            if (box) box->show();
+            if (box) {
+                box->setTitle(name);
+                box->show();
+                qDebug() << "Box title set to:" << box->title();
+            }
+
+            if (score) {
+                score->setText(QString::number(scr));
+                score->show();
+                qDebug() << "Score text set to:" << score->text();
+            }
         } else {
-            if (box) box->hide();  // Скрываем лишние
+            qDebug() << "Hiding player" << i << "elements";
+            if (box) box->hide();
+            if (score) score->hide();
         }
     }
+
+    qDebug() << "--- UI UPDATE COMPLETE ---";
+    QApplication::processEvents(); // Принудительная обработка событий
 }
+
 
 
 void MultiplayerWindow::showQuestionDialog(const QString &question, int time) {
@@ -175,7 +205,9 @@ void MultiplayerWindow::onQuestionSelected(int themeIndex, int questionIndex) {
 
 void MultiplayerWindow::handleQuestionStart(const QJsonObject &msg) {
     currentQuestion = msg; // сохраним для оценки
-    showQuestionDialog(msg["text"].toString(), 20);
+    if(!isHost){
+        showQuestionDialog(msg["text"].toString(), 20);
+    }
     ui->answerButton->setEnabled(false);
 }
 
@@ -209,13 +241,12 @@ void MultiplayerWindow::onQuestionButtonClicked()
     QPushButton* button = qobject_cast<QPushButton*>(sender());
     if (!button) return;
 
-    // Предположим, что ты хочешь передавать тему и индекс вопроса через свойства кнопки
-    // Например, установи эти свойства при создании кнопок:
-    // button->setProperty("themeIndex", themeIndex);
-    // button->setProperty("questionIndex", questionIndex);
 
     int themeIndex = button->property("themeIndex").toInt();
     int questionIndex = button->property("questionIndex").toInt();
+
+    currentThemeIndex = themeIndex;
+    currentQuestionIndex = questionIndex;
 
     if (client) {
         QJsonObject msg;
@@ -242,6 +273,7 @@ void MultiplayerWindow::on_answerButton_clicked() {
 
 void MultiplayerWindow::onServerMessageReceived(const QJsonObject& obj)
 {
+    qDebug()<<"onServerMessageReceived is called";
     QString type = obj["type"].toString();
 
     if (type == "question_started") {
@@ -249,11 +281,50 @@ void MultiplayerWindow::onServerMessageReceived(const QJsonObject& obj)
         QString text = question["text"].toString();
         int cost = question["cost"].toInt();
 
-        // Показываем диалог с вопросом, например, на 30 секунд
-        showQuestionDialog(text, 30); // 30 — пример, можно заменить
-
+        currentQuestionText=text;
+        currentCorrectAnswer=question["answer"].toString();
+        if(!isHost){
+            showQuestionDialog(text, 7);
+        }
 
     }
+    else if (type == "player_buzzed") {
+        QString player = obj["nickname"].toString();
+        playerWhoBuzzed=player;
+        // Только ведущий показывает диалог подтверждения
+        if (isHost) {
+
+            qDebug()<<"Show questionText and etc:"<<currentQuestionText<<" "<<currentCorrectAnswer;
+            showAnswerValidationDialog(currentQuestionText, currentCorrectAnswer);
+        }
+
+        // Можно показать на экране, кто нажал
+        //QMessageBox::information(this, "Ответ", QString("%1 нажал кнопку!").arg(player));
+        return;
+    }
+    else if (type == "answer_validated") {
+        bool correct = obj["correct"].toBool();
+
+        // Можно отключить кнопку ответа
+        ui->answerButton->setEnabled(false);
+
+        QString msg = correct ? "Ответ верный!" : "Ответ неверный!";
+        QMessageBox::information(this, "Результат", msg);
+        return;
+    }
+    else if (type == "game_data") {
+        QString title = obj["title"].toString();
+        QJsonArray themes = obj["themes"].toArray();
+        QJsonArray questions = obj["questions"].toArray();
+        QJsonArray players = obj["players"].toArray();
+
+        onGameDataReceived(title, players, themes, questions);
+    }
+    else if (type == "question_timeout") {
+        QMessageBox::information(this, "Время вышло", "Никто не ответил вовремя!");
+        return;
+    }
+
 }
 
 
@@ -276,11 +347,16 @@ void MultiplayerWindow::showAnswerValidationDialog(const QString &question, cons
         QJsonObject msg;
         msg["type"] = "answer_validated";
         msg["correct"] = correct;
+        msg["themeIndex"] = currentThemeIndex;
+        msg["questionIndex"] = currentQuestionIndex;
+        msg["player"] = playerWhoBuzzed;
         client->sendJson(msg);
-    });
 
+    });
+    qDebug()<<currentThemeIndex<<" "<<currentQuestionIndex;
     dialog->exec();
 }
+
 void MultiplayerWindow::setButtonsEnabledForHost(bool enabled) {
     QLayout* layout = ui->gridLayout;
     for (int i = 0; i < layout->count(); ++i) {

@@ -41,6 +41,7 @@ void GameClient::onConnected()
 
 void GameClient::onReadyRead()
 {
+    qDebug()<<"onReadyRead is called";
     buffer += socket->readAll();
 
     while (true) {
@@ -55,6 +56,7 @@ void GameClient::onReadyRead()
         if (!doc.isObject()) continue;
 
         QJsonObject obj = doc.object();
+        qDebug()<<"onReadyRead() is called"<<obj["type"].toString();
         if (obj["type"].toString() == "lobby_update") {
             QStringList players;
             QJsonObject playerList = obj["players"].toObject();
