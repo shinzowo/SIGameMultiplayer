@@ -13,6 +13,8 @@
 #include "GameClient.h"
 #include "multiplayerwindow.h"
 
+
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -40,8 +42,11 @@ private:
     GameClient *client=nullptr;
 
     bool alreadyDisconnected = false; //от двойного срабатывания
+    void connectClients();
+
 
 private slots:
+
     void showConnectionSetup();
     void showPlayerSetup();
     void showEditQuestionPack();
@@ -53,6 +58,7 @@ private slots:
     void onConnectClicked();
     void onLobbyUpdated(const QStringList &players);
     void onGameStart();
+
 
 };
 #endif // MAINWINDOW_H

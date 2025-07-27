@@ -13,10 +13,17 @@ public:
     ~GameClient();
     void connectToServer(const QString &host, quint16 port, const QString &nickname);
     void sendReadyStatus(bool isReady);
+    void sendJson(const QJsonObject &obj);
+
 
 signals:
     void lobbyUpdated(const QStringList &players);
     void gameStarted();
+    void gameDataReceived(const QString& title,
+                              const QJsonArray& players,
+                              const QJsonArray& themes,
+                              const QJsonArray& questions);
+    void jsonReceived(const QJsonObject &obj);
 
 private slots:
     void onConnected();

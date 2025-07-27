@@ -138,7 +138,7 @@ MainMenuWidget::MainMenuWidget(QWidget *parent):QWidget(parent){
         anim->start(QAbstractAnimation::DeleteWhenStopped);
         isExpanded = !isExpanded;
     });
-
+    profileBtn->click();
     connect(playMPBtn, &QPushButton::clicked, this, &MainMenuWidget::startMultiplayerGameRequested);
     connect(hotseatBtn, &QPushButton::clicked, this, &MainMenuWidget::startSingleGameRequested);
     connect(editQuestionBtn, &QPushButton::clicked, this, &MainMenuWidget::editQuestionRequested);

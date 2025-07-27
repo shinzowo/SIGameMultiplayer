@@ -9,6 +9,10 @@
 #include "QuestionDialog.h"
 
 
+
+void showAnswerValidationDialog(const QString& question, const QString& answer);
+
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -59,9 +63,16 @@ MainWindow::MainWindow(QWidget *parent)
 
 
     connect(gameWidget, &GameWidget::onBackClicked, this, &MainWindow::toPlayerSetup);
+
+
 }
 void MainWindow::showConnectionSetup()
 {
+    if(menuWidget->getNickname().isEmpty()){
+        QMessageBox::critical(this, "Ошибка", "Введите никнейм");
+
+        return;
+    }
     // 1. Отключаем клиента
     if (client) {
         client->deleteLater();     // автоматически вызывает disconnectFromHost()
@@ -97,11 +108,16 @@ void MultiplayerWindow::showQuestionDialog(const QString &question, int time) {
     dialog->exec();
 }
 
+
 void MainWindow::showEditQuestionPack(){
     //===ТЕСТОВАЯ ЧАСТЬ КОДА===
     gameMPWindow->showAnswerValidationDialog("Столица Франции?", "Париж");
 
 }
+
+
+
+
 void MainWindow::showPlayerSetup() {
     stackedWidget->setCurrentWidget(setupSinglePlayWidget);
 }
@@ -148,6 +164,7 @@ void MainWindow::onCreateServerClicked()
         return;
     }
     server->hostNickname = nickname;
+    server->setQuestionFilePath(connectionSetup->getLoadPath());
     server->startServer(port);
 
 
@@ -155,14 +172,18 @@ void MainWindow::onCreateServerClicked()
     QTimer::singleShot(100, this, [=]() {
         client = new GameClient(this);
 
-        connect(lobbyWindow, &LobbyWindow::readyStatusChanged, client, &GameClient::sendReadyStatus);
-        connect(client, &GameClient::gameStarted, this, &MainWindow::onGameStart);
-        connect(client, &GameClient::lobbyUpdated, this, &MainWindow::onLobbyUpdated);
+        connectClients();
 
         client->connectToServer("127.0.0.1", port, nickname);
+
+
     });
 
     showLobby();
+    //устанавливаем вид как хост
+    gameMPWindow->setAsHost();
+    gameMPWindow->setButtonsEnabledForHost(true);
+
 }
 
 // MainWindow::onConnectClicked()
@@ -174,13 +195,15 @@ void MainWindow::onConnectClicked()
     qDebug()<<"onConnectClicked"<<ip<<" "<<port<<" "<<nickname;
     client = new GameClient(this);
 
-    connect(lobbyWindow, &LobbyWindow::readyStatusChanged, client, &GameClient::sendReadyStatus);
-    connect(client, &GameClient::gameStarted, this, &MainWindow::onGameStart);
-    connect(client, &GameClient::lobbyUpdated, this, &MainWindow::onLobbyUpdated);
+    connectClients();
+
 
     client->connectToServer(ip, port, nickname);
 
+
     showLobby();
+    gameMPWindow->setAsClient();
+    gameMPWindow->setButtonsEnabledForHost(false);
 }
 
 // В onLobbyUpdated:
@@ -226,6 +249,19 @@ void MainWindow::onGameStart()
 {
     qDebug() << "Game starting!";
     stackedWidget->setCurrentWidget(gameMPWindow);
+}
+
+void MainWindow::connectClients(){
+    connect(lobbyWindow, &LobbyWindow::readyStatusChanged, client, &GameClient::sendReadyStatus);
+    connect(client, &GameClient::gameStarted, this, &MainWindow::onGameStart);
+    connect(client, &GameClient::lobbyUpdated, this, &MainWindow::onLobbyUpdated);
+    connect(client, &GameClient::gameDataReceived, gameMPWindow, &MultiplayerWindow::onGameDataReceived);
+
+    gameMPWindow->setClient(client);
+
+    gameMPWindow->setNickname(menuWidget->getNickname());
+
+
 }
 
 

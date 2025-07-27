@@ -3,13 +3,16 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QDebug>
 
 QuestionPackage::QuestionPackage() {}
 
 bool QuestionPackage::loadFromFile(const QString &filePath) {
     QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly))
+    if (!file.open(QIODevice::ReadOnly)){
+        qDebug()<<"File is not open";
         return false;
+    }
 
     QByteArray data = file.readAll();
     file.close();
@@ -60,8 +63,14 @@ QList<GameRound> QuestionPackage::getRounds() const {
 }
 
 GameRound& QuestionPackage::getRound(int index) {
+    if (index < 0 || index >= rounds.size()) {
+        qWarning() << "getRound(): invalid index" << index;
+        static GameRound dummy; // безопасная заглушка
+        return dummy;
+    }
     return rounds[index];
 }
+
 
 const GameRound& QuestionPackage::getRound(int index) const {
     return rounds[index];

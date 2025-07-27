@@ -24,6 +24,7 @@ private slots:
 public:
     QString getIP();
     quint16 getPort();
+    QString getLoadPath();
 private:
     QComboBox* modeSelector;
 
@@ -34,6 +35,9 @@ private:
     QWidget* serverPage;
     QLineEdit* serverPortEdit;
     QPushButton* serverActionButton;
+    QPushButton* loadPackButton;
+    QString loadPackPath="";
+    void onLoadPackButtonClicked();
 
     // Для клиента
     QWidget* clientPage;

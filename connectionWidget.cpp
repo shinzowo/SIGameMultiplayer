@@ -4,6 +4,7 @@
 #include <QFont>
 #include <QHBoxLayout>
 #include <QMessageBox>
+#include <QFileDialog>
 
 ConnectionWidget::ConnectionWidget(QWidget *parent) : QWidget(parent) {
     QFont font("Inter", 16);
@@ -55,6 +56,12 @@ ConnectionWidget::ConnectionWidget(QWidget *parent) : QWidget(parent) {
     serverActionButton->setFont(font);
     serverActionButton->setStyleSheet(buttonStyle);
     serverLayout->addWidget(serverActionButton);
+
+    loadPackButton = new QPushButton("Загрузить пак");
+    loadPackButton->setFont(font);
+    loadPackButton->setStyleSheet(buttonStyle);
+    serverLayout->addWidget(loadPackButton);
+    connect(loadPackButton, &QPushButton::clicked, this, &ConnectionWidget::onLoadPackButtonClicked);
 
     stackedWidget->addWidget(serverPage);
 
@@ -112,6 +119,10 @@ void ConnectionWidget::modeChanged(int index) {
 
 void ConnectionWidget::handleActionClicked() {
     if (stackedWidget->currentWidget() == serverPage) {
+        if(loadPackPath.isEmpty()){
+            QMessageBox::information(this, "Сообщение", "Загрузите пак");
+            return;
+        }
         QString rawPort = serverPortEdit->text();
         qDebug() << "Raw port input:" << rawPort;
 
@@ -153,6 +164,20 @@ QString ConnectionWidget::getIP(){
 }
 quint16 ConnectionWidget::getPort(){
     return port;
+}
+
+QString ConnectionWidget::getLoadPath(){
+    return loadPackPath;
+}
+
+void ConnectionWidget::onLoadPackButtonClicked() {
+    QString fileName = QFileDialog::getOpenFileName(this, "Выберите файл", "", "Все файлы (*.*)");
+    if (!fileName.isEmpty()) {
+        loadPackPath = fileName;
+        serverActionButton->setEnabled(true);
+        qDebug() << "Выбранный файл:" << loadPackPath;
+
+    }
 }
 
 

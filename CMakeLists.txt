@@ -60,12 +60,13 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         multiplayerwindow.h
         multiplayerwindow.cpp
         multiplayerwindow.ui
-        QuestionDialog.ui
+        answervalidationdialog.h
+        answervalidationdialog.cpp
         AnswerValidationDialog.ui
         questiondialog.h
         questiondialog.cpp
-        answervalidationdialog.h
-        answervalidationdialog.cpp
+        AnswerValidationDialog.ui
+
     )
 else()
     if(ANDROID)

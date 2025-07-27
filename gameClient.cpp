@@ -1,6 +1,7 @@
 #include "GameClient.h"
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonArray>
 #include <QDebug>
 
 GameClient::GameClient(QObject *parent)
@@ -40,6 +41,7 @@ void GameClient::onConnected()
 
 void GameClient::onReadyRead()
 {
+    qDebug()<<"onReadyRead is called";
     buffer += socket->readAll();
 
     while (true) {
@@ -54,6 +56,7 @@ void GameClient::onReadyRead()
         if (!doc.isObject()) continue;
 
         QJsonObject obj = doc.object();
+        qDebug()<<"onReadyRead() is called"<<obj["type"].toString();
         if (obj["type"].toString() == "lobby_update") {
             QStringList players;
             QJsonObject playerList = obj["players"].toObject();
@@ -69,6 +72,15 @@ void GameClient::onReadyRead()
             qDebug() << "Received game_start, emitting signal";
             continue;
         }
+        else if (obj["type"].toString() == "game_data") {
+            QString title = obj["title"].toString();
+            QJsonArray themes = obj["themes"].toArray();
+            QJsonArray questions = obj["questions"].toArray();
+            QJsonArray players = obj["players"].toArray();
+
+            emit gameDataReceived(title, players, themes, questions);
+        }
+        emit jsonReceived(obj);
     }
 }
 
@@ -98,6 +110,23 @@ void GameClient::sendReadyStatus(bool isReady)
         qDebug() << "Failed to send ready status!";
     }
 }
+
+void GameClient::sendJson(const QJsonObject &obj)
+{
+    if (!socket || !socket->isOpen()) {
+        qWarning() << "Socket not connected!";
+        return;
+    }
+
+    QByteArray data = QJsonDocument(obj).toJson(QJsonDocument::Compact) + "\n";
+    socket->write(data);
+    if (!socket->waitForBytesWritten(1000)) {
+        qWarning() << "Failed to send data to server!";
+    } else {
+        qDebug() << "Sent JSON:" << data;
+    }
+}
+
 
 
 
